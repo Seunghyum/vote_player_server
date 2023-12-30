@@ -1,10 +1,10 @@
-import puppeteer, { Page } from "puppeteer";
+import puppeteer, { Handler, Page } from "puppeteer";
 import sleep from "@lib/sleep";
 import { writeJsonFile } from "@lib/file";
 import path from "path";
 
 (async () => {
-  const browser = await puppeteer.launch({ headless: false, slowMo: 100 });
+  const browser = await puppeteer.launch({ headless: false, slowMo: 50 });
   const page = await browser.newPage();
   await page.goto(
     "https://open.assembly.go.kr/portal/assm/search/memberSchPage.do"
@@ -15,38 +15,17 @@ import path from "path";
   const links = "a.nassem_reslut_pic img";
   const elements = await page.$$(links);
 
-  const waitForWindow = new Promise((resolve) => page.on("popup", resolve));
+  const waitForWindow = new Promise((resolve: Handler<Page | null>) =>
+    page.on("popup", resolve)
+  );
 
   await elements[0].evaluate((b) => b.click());
   const newPage = await waitForWindow;
 
-  const enName = await (newPage as Page).$eval(".tit span.sm", (el) => {
-    const value = el?.firstChild?.nodeValue;
-
-    return { enName: value?.replace(/\s/g, "") };
-  });
-  console.log("enName : ", enName);
-
-  const intro = await (newPage as Page).$$eval("ul.list li", (list) => {
-    const obj: { [key: string]: string | undefined } = {};
-
-    for (const item of list) {
-      const key = item.querySelector("dt")?.innerText;
-      const value = item.querySelector("dd")?.innerText;
-      if (key !== undefined) {
-        obj[key] = value;
-      }
-    }
-    return obj;
-  });
-  console.log("intro : ", intro);
-
-  const history = await (newPage as Page).$eval(".profile pre", (el) => {
-    const value = el?.innerText;
-
-    return { "주요 약력": value };
-  });
-  console.log("history : ", history);
+  if (!newPage) return;
+  const intro = await getIntroFromHTML(newPage);
+  const history = await getHistoryFromHTML(newPage);
+  const enName = await getEnNameFromHTML(newPage);
 
   const obj = {
     enName,
@@ -65,3 +44,34 @@ import path from "path";
 
   await browser.close();
 })();
+
+function getIntroFromHTML(page: Page) {
+  return page.$$eval("ul.list li", (list) => {
+    const obj: { [key: string]: string | undefined } = {};
+
+    for (const item of list) {
+      const key = item.querySelector("dt")?.innerText;
+      const value = item.querySelector("dd")?.innerText;
+      if (key !== undefined) {
+        obj[key] = value;
+      }
+    }
+    return obj;
+  });
+}
+
+function getHistoryFromHTML(page: Page) {
+  return page.$eval(".profile pre", (el) => {
+    const value = el?.innerText;
+
+    return { "주요 약력": value };
+  });
+}
+
+function getEnNameFromHTML(page: Page) {
+  return page.$eval(".tit span.sm", (el) => {
+    const value = el?.firstChild?.nodeValue;
+
+    return { enName: value?.replace(/\s/g, "") };
+  });
+}
