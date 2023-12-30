@@ -1,5 +1,4 @@
-import puppeteer, { Handler, Page } from "puppeteer";
-import sleep from "@lib/sleep";
+import puppeteer, { Browser, ElementHandle, Handler, Page } from "puppeteer";
 import { writeJsonFile } from "@lib/file";
 import path from "path";
 
@@ -12,35 +11,12 @@ import path from "path";
 
   await page.setViewport({ width: 1880, height: 1024 });
 
-  const links = "a.nassem_reslut_pic img";
-  const elements = await page.$$(links);
+  const selector = "a.nassem_reslut_pic img";
+  const elements = await page.$$(selector);
 
-  const waitForWindow = new Promise((resolve: Handler<Page | null>) =>
-    page.on("popup", resolve)
-  );
-
-  await elements[0].evaluate((b) => b.click());
-  const newPage = await waitForWindow;
-
-  if (!newPage) return;
-  const intro = await getIntroFromHTML(newPage);
-  const history = await getHistoryFromHTML(newPage);
-  const enName = await getEnNameFromHTML(newPage);
-
-  const obj = {
-    enName,
-    intro,
-    history,
-  };
-
-  writeJsonFile({
-    obj,
-    folderPath: path.resolve(__dirname, "../data/candidates"),
-    fileName: `${enName.enName}.json`,
-    dateTime: new Date(),
-  });
-
-  await sleep(5000);
+  for (const el of elements) {
+    await createCandidateInfoFromNewTab(page, browser, el);
+  }
 
   await browser.close();
 })();
@@ -58,6 +34,39 @@ function getIntroFromHTML(page: Page) {
     }
     return obj;
   });
+}
+
+async function createCandidateInfoFromNewTab(
+  page: Page,
+  browser: Browser,
+  element: ElementHandle<HTMLElement>
+) {
+  const waitForWindow = new Promise((resolve: Handler<Page | null>) =>
+    page.on("popup", resolve)
+  );
+  await element.evaluate((b) => b.click());
+  const newPage = await waitForWindow;
+  console.log("newPage : ", newPage);
+
+  if (!newPage) return browser.close;
+  const intro = await getIntroFromHTML(newPage);
+  const history = await getHistoryFromHTML(newPage);
+  const enName = await getEnNameFromHTML(newPage);
+
+  const obj = {
+    enName,
+    intro,
+    history,
+  };
+
+  writeJsonFile({
+    obj,
+    folderPath: path.resolve(__dirname, "../data/candidates"),
+    fileName: `${enName.enName}.json`,
+    dateTime: new Date(),
+  });
+
+  await newPage.close();
 }
 
 function getHistoryFromHTML(page: Page) {
