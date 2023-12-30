@@ -1,20 +1,66 @@
-import puppeteer from "puppeteer";
+import puppeteer, { Page } from "puppeteer";
 import sleep from "@lib/sleep";
+import { writeJsonFile } from "@lib/file";
+import path from "path";
 
 (async () => {
-  const browser = await puppeteer.launch({ headless: false });
+  const browser = await puppeteer.launch({ headless: false, slowMo: 100 });
   const page = await browser.newPage();
   await page.goto(
     "https://open.assembly.go.kr/portal/assm/search/memberSchPage.do"
   );
 
-  await page.setViewport({ width: 1080, height: 1024 });
+  await page.setViewport({ width: 1880, height: 1024 });
 
-  const links = ".nassem_reslut_pic";
+  const links = "a.nassem_reslut_pic img";
   const elements = await page.$$(links);
-  console.log("elements.length : ", elements.length);
 
-  await elements[0].click();
+  const waitForWindow = new Promise((resolve) => page.on("popup", resolve));
+
+  await elements[0].evaluate((b) => b.click());
+  const newPage = await waitForWindow;
+
+  const enName = await (newPage as Page).$eval(".tit span.sm", (el) => {
+    const value = el?.firstChild?.nodeValue;
+
+    return { enName: value?.replace(/\s/g, "") };
+  });
+  console.log("enName : ", enName);
+
+  const intro = await (newPage as Page).$$eval("ul.list li", (list) => {
+    const obj: { [key: string]: string | undefined } = {};
+
+    for (const item of list) {
+      const key = item.querySelector("dt")?.innerText;
+      const value = item.querySelector("dd")?.innerText;
+      if (key !== undefined) {
+        obj[key] = value;
+      }
+    }
+    return obj;
+  });
+  console.log("intro : ", intro);
+
+  const history = await (newPage as Page).$eval(".profile pre", (el) => {
+    const value = el?.innerText;
+
+    return { "주요 약력": value };
+  });
+  console.log("history : ", history);
+
+  const obj = {
+    enName,
+    intro,
+    history,
+  };
+
+  writeJsonFile({
+    obj,
+    folderPath: path.resolve(__dirname, "../data/candidates"),
+    fileName: `${enName.enName}.json`,
+    dateTime: new Date(),
+  });
+
   await sleep(5000);
 
   await browser.close();
