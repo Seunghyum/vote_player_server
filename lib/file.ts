@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { defaultTimeFormat } from "./date";
+import { ElementHandle } from "puppeteer";
 
 export function writeJsonFile({
   obj,
@@ -22,5 +23,25 @@ interface writeJsonFileProps {
   obj: object;
   fileName: string;
   dateTime: Date;
+  folderPath: string;
+}
+
+export async function writeImageByElement({
+  fileName,
+  folderPath,
+  element,
+}: writeImageByElementProps) {
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true });
+  }
+  try {
+    await element.screenshot({ path: `${folderPath}/${fileName}` });
+  } catch (e) {
+    console.log(e);
+  }
+}
+interface writeImageByElementProps {
+  element: ElementHandle<Element>;
+  fileName: string;
   folderPath: string;
 }

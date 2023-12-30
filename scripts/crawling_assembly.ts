@@ -1,23 +1,49 @@
 import puppeteer, { Browser, ElementHandle, Handler, Page } from "puppeteer";
-import { writeJsonFile } from "@lib/file";
+import { writeImageByElement, writeJsonFile } from "@lib/file";
 import path from "path";
+import sleep from "@lib/sleep";
+import { $, $$ } from "@lib/selector";
 
 (async () => {
-  const browser = await puppeteer.launch({ headless: false, slowMo: 50 });
+  const browser = await puppeteer.launch({
+    // headless: false,
+    slowMo: 50,
+  });
   const page = await browser.newPage();
   await page.goto(
     "https://open.assembly.go.kr/portal/assm/search/memberSchPage.do"
   );
 
-  await page.setViewport({ width: 1880, height: 1024 });
+  await page.setViewport({ width: 1920, height: 1080 });
+
+  const pictureBtn = await $(page, "#tab-btn-sect a:nth-child(2)");
+  await pictureBtn?.click();
 
   const selector = "a.nassem_reslut_pic img";
-  const elements = await page.$$(selector);
+  const elements = await $$(page, selector);
 
   for (const el of elements) {
     await createCandidateInfoFromNewTab(page, browser, el);
   }
 
+  //페이지네이션 순회
+  let i = 0;
+  let length = 11;
+  for (let i = 0; i < length; i++) {
+    const selector = "#pic-sect-pager strong + a.page-number";
+    const p = await $(page, selector, { timeout: 5000 });
+    console.log("p : ", p);
+    if (p) {
+      await p.click();
+
+      // 의원 순회
+      const selector = "a.nassem_reslut_pic img";
+      const elements = await $$(page, selector);
+      for (const el of elements) {
+        await createCandidateInfoFromNewTab(page, browser, el);
+      }
+    }
+  }
   await browser.close();
 })();
 
@@ -39,19 +65,22 @@ function getIntroFromHTML(page: Page) {
 async function createCandidateInfoFromNewTab(
   page: Page,
   browser: Browser,
-  element: ElementHandle<HTMLElement>
+  element: ElementHandle<Element>
 ) {
   const waitForWindow = new Promise((resolve: Handler<Page | null>) =>
     page.on("popup", resolve)
   );
-  await element.evaluate((b) => b.click());
+
+  await element.click();
   const newPage = await waitForWindow;
-  console.log("newPage : ", newPage);
 
   if (!newPage) return browser.close;
+
+  await newPage.setViewport({ width: 1920, height: 1080 });
+  await sleep(500);
   const intro = await getIntroFromHTML(newPage);
   const history = await getHistoryFromHTML(newPage);
-  const enName = await getEnNameFromHTML(newPage);
+  const enName = await getEnNameFromUrl(newPage);
 
   const obj = {
     enName,
@@ -59,10 +88,19 @@ async function createCandidateInfoFromNewTab(
     history,
   };
 
+  const imageElement = await $(newPage, ".img-set .img");
+  console.log("imageElement : ", imageElement);
+  if (imageElement)
+    await writeImageByElement({
+      element: imageElement,
+      folderPath: path.resolve(__dirname, "../data/candidates/images"),
+      fileName: `${enName}.png`,
+    });
+  else console.log(`${enName}.png image not created. check out`);
   writeJsonFile({
     obj,
     folderPath: path.resolve(__dirname, "../data/candidates"),
-    fileName: `${enName.enName}.json`,
+    fileName: `${enName}.json`,
     dateTime: new Date(),
   });
 
@@ -83,4 +121,9 @@ function getEnNameFromHTML(page: Page) {
 
     return { enName: value?.replace(/\s/g, "") };
   });
+}
+
+function getEnNameFromUrl(page: Page) {
+  const arr = page.url().split("/");
+  return arr[arr.length - 1];
 }
