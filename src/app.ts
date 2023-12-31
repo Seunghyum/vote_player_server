@@ -10,7 +10,11 @@ app.use("/candidates", candidatesRoute);
 
 if (!MONGO_URI) throw Error("dontenv 설정을 확인하세요");
 mongoose
-  .connect(MONGO_URI)
+  .connect(MONGO_URI, {
+    authSource: "admin",
+    user: "admin",
+    pass: "password",
+  })
   .then(() => console.log("Successfully connected to mongodb"))
   .catch((e) => console.error(e));
 

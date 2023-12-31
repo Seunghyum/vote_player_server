@@ -3,7 +3,9 @@
     "baseUrl": ".",
     "paths": {
       "@lib/*": ["src/lib/*"],
-      "@routes/*": ["src/routes/*"]
+      "@routes/*": ["src/routes/*"],
+      "@models/*": ["src/models/*"],
+      "@constants/*": ["src/constants/*"]
     },
     "outDir": "dist",
     "target": "ESNext",
