@@ -10,6 +10,7 @@ import fs from "fs";
 import sleep from "@lib/sleep";
 import { $, $$ } from "@lib/selector";
 import { defaultTimeFormat } from "@lib/date";
+import { koNameToEnName } from "@constants/column_name_map";
 
 (async () => {
   const candidatesFolderPath = path.resolve(__dirname, "../../data/candidates");
@@ -37,7 +38,7 @@ import { defaultTimeFormat } from "@lib/date";
     // 첫페이지 크롤링
     if (elements.length === 0)
       throw Error("첫 페이지의 의원 수가 0이 될 수 없습니다");
-
+    console.log("page : 1");
     await iterateCandidatesInPage(page, browser);
 
     //페이지네이션 순회
@@ -47,14 +48,14 @@ import { defaultTimeFormat } from "@lib/date";
     for (let i = 0; i < length; i++) {
       const selector = "#pic-sect-pager strong + a.page-number";
       const p = await $(page, selector, { timeout: 5000 });
-      console.log("p : ", p);
+      console.log("page : ", i + 2);
       if (p) {
         await p.click();
 
         // 의원 순회
         await iterateCandidatesInPage(page, browser);
       } else {
-        numOfPagination = i;
+        numOfPagination = i + 1;
         break;
       }
     }
@@ -80,23 +81,28 @@ import { defaultTimeFormat } from "@lib/date";
 })();
 
 function getIntroFromHTML(page: Page) {
-  return page.$$eval("ul.list li", (list) => {
-    const obj: { [key: string]: string | undefined } = {};
+  return page.$$eval(
+    "ul.list li",
+    (list, koNameToEnName) => {
+      const obj: { [key: string]: string | undefined } = {};
 
-    for (const item of list) {
-      const key = item.querySelector("dt")?.innerText?.replace(/\s/g, "");
-      const value = item.querySelector("dd")?.innerText;
-      if (key !== undefined) {
-        obj[key] = value;
+      for (const item of list) {
+        const key = item.querySelector("dt")?.innerText?.replace(/\s/g, "");
+        const value = item.querySelector("dd")?.innerText;
+        if (key !== undefined) {
+          obj[koNameToEnName[key as keyof typeof koNameToEnName]] = value;
+        }
       }
-    }
-    return obj;
-  });
+      return obj;
+    },
+    koNameToEnName
+  );
 }
 
 async function iterateCandidatesInPage(page: Page, browser: Browser) {
   const selector = "a.nassem_reslut_pic img";
   const elements = await $$(page, selector);
+  console.log("elements length : ", elements.length);
   for (const el of elements) {
     await createCandidateInfoFromNewTab(page, browser, el);
   }
@@ -120,16 +126,19 @@ async function createCandidateInfoFromNewTab(
   await sleep(500);
   const intro = await getIntroFromHTML(newPage);
   const history = await getHistoryFromHTML(newPage);
+  const koName = await getKoNameFromHTML(newPage);
   const enName = await getEnNameFromUrl(newPage);
+  const partName = await getPartyNameFromHTML(newPage);
 
   const obj = {
     enName,
     intro,
     history,
+    koName,
+    partName,
   };
 
   const imageElement = await $(newPage, ".img-set .img");
-  console.log("imageElement : ", imageElement);
   if (imageElement)
     await writeImageByElement({
       element: imageElement,
@@ -151,19 +160,27 @@ function getHistoryFromHTML(page: Page) {
   return page.$eval(".profile pre", (el) => {
     const value = el?.innerText;
 
-    return { "주요 약력": value };
+    return value;
   });
 }
-
-function getEnNameFromHTML(page: Page) {
-  return page.$eval(".tit span.sm", (el) => {
-    const value = el?.firstChild?.nodeValue;
-
-    return { enName: value?.replace(/\s/g, "") };
-  });
-}
-
 function getEnNameFromUrl(page: Page) {
   const arr = page.url().split("/");
   return arr[arr.length - 1];
+}
+
+function getKoNameFromHTML(page: Page) {
+  return page.$eval(".tit strong", (el) => {
+    const value = el?.innerText;
+    const name = value.split(" ")[0];
+
+    return name;
+  });
+}
+
+function getPartyNameFromHTML(page: Page) {
+  return page.$eval(".tit dd", (el) => {
+    const value = el?.innerText;
+
+    return value;
+  });
 }

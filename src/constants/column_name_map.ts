@@ -1,0 +1,15 @@
+export const koNameToEnName = {
+  선거구: "electoralDistrict",
+  소속위원회: "affiliatedCommittee",
+  당선횟수: "electionCount",
+  사무실전화: "officePhone",
+  사무실호실: "officeRoom",
+  의원홈페이지: "memberHomepage",
+  개별홈페이지: "individualHomepage",
+  이메일: "email",
+  보좌관: "aide",
+  선임비서관: "chiefOfStaff",
+  비서관: "secretary",
+  의원실안내: "officeGuide",
+  주요약력: "history",
+} as const;
