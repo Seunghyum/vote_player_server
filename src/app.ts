@@ -1,11 +1,19 @@
 import express from "express";
+import mongoose from "mongoose";
 import candidatesRoute from "@routes/candidates";
+import "dotenv/config";
 
 const app = express();
-const port = 8080;
+const { PORT, MONGO_URI } = process.env;
 
 app.use("/candidates", candidatesRoute);
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+if (!MONGO_URI) throw Error("dontenv 설정을 확인하세요");
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log("Successfully connected to mongodb"))
+  .catch((e) => console.error(e));
+
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}`);
 });
