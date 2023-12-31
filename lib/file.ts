@@ -61,3 +61,9 @@ export function zipDirectory(sourceDirPath: string, outPath: string) {
     archive.finalize();
   });
 }
+
+export function removeDirIfExist(path: string) {
+  if (fs.existsSync(path)) {
+    fs.rmSync(path, { recursive: true, force: true });
+  }
+}

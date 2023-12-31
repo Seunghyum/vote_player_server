@@ -1,5 +1,10 @@
 import puppeteer, { Browser, ElementHandle, Handler, Page } from "puppeteer";
-import { writeImageByElement, writeJsonFile, zipDirectory } from "@lib/file";
+import {
+  removeDirIfExist,
+  writeImageByElement,
+  writeJsonFile,
+  zipDirectory,
+} from "@lib/file";
 import path from "path";
 import fs from "fs";
 import sleep from "@lib/sleep";
@@ -7,10 +12,8 @@ import { $, $$ } from "@lib/selector";
 import { defaultTimeFormat } from "@lib/date";
 
 (async () => {
-  const candidatesFolderPath = path.relative(__dirname, "../data/candidates");
-  if (fs.existsSync(candidatesFolderPath)) {
-    fs.rmSync(candidatesFolderPath, { recursive: true, force: true });
-  }
+  const candidatesFolderPath = path.resolve(__dirname, "../data/candidates");
+  removeDirIfExist(candidatesFolderPath);
 
   const browser = await puppeteer.launch({
     // headless: false,
@@ -29,6 +32,8 @@ import { defaultTimeFormat } from "@lib/date";
 
     const selector = "a.nassem_reslut_pic img";
     const elements = await $$(page, selector);
+    const candidatesPerPage = elements.length;
+    const numOfPagination = elements.length + 1;
 
     for (const el of elements) {
       await createCandidateInfoFromNewTab(page, browser, el);
@@ -61,7 +66,11 @@ import { defaultTimeFormat } from "@lib/date";
     );
     await zipDirectory(candidatesFolderPath, zipPath);
     if (numOfCandidates !== 300)
-      throw Error(`전체 의석수 300개 중 #{length}개만 크롤링 성공하였습니다`);
+      throw Error(
+        `전체 의석수 300개 중 ${numOfCandidates}개만 크롤링 성공하였습니다.\n
+        한 페이지당 총 ${candidatesPerPage}명의 의원.\n
+        페이지네이션 총 ${numOfPagination}개만 실행.`
+      );
   } catch (err) {
     console.error(err);
   } finally {
