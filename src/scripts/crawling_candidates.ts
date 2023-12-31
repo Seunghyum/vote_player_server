@@ -12,7 +12,7 @@ import { $, $$ } from "@lib/selector";
 import { defaultTimeFormat } from "@lib/date";
 
 (async () => {
-  const candidatesFolderPath = path.resolve(__dirname, "../data/candidates");
+  const candidatesFolderPath = path.resolve(__dirname, "../../data/candidates");
   removeDirIfExist(candidatesFolderPath);
 
   const browser = await puppeteer.launch({
@@ -63,7 +63,7 @@ import { defaultTimeFormat } from "@lib/date";
 
     const zipPath = path.resolve(
       __dirname,
-      `../data/candidates-${defaultTimeFormat(new Date())}.zip`
+      `../../data/candidates-${defaultTimeFormat(new Date())}.zip`
     );
     await zipDirectory(candidatesFolderPath, zipPath);
     if (numOfCandidates !== 298)
@@ -84,7 +84,7 @@ function getIntroFromHTML(page: Page) {
     const obj: { [key: string]: string | undefined } = {};
 
     for (const item of list) {
-      const key = item.querySelector("dt")?.innerText;
+      const key = item.querySelector("dt")?.innerText?.replace(/\s/g, "");
       const value = item.querySelector("dd")?.innerText;
       if (key !== undefined) {
         obj[key] = value;
@@ -133,13 +133,13 @@ async function createCandidateInfoFromNewTab(
   if (imageElement)
     await writeImageByElement({
       element: imageElement,
-      folderPath: path.resolve(__dirname, "../data/candidates/images"),
+      folderPath: path.resolve(__dirname, "../../data/candidates/images"),
       fileName: `${enName}.png`,
     });
   else console.log(`${enName}.png image not created. check out`);
   writeJsonFile({
     obj,
-    folderPath: path.resolve(__dirname, "../data/candidates"),
+    folderPath: path.resolve(__dirname, "../../data/candidates"),
     fileName: `${enName}.json`,
     dateTime: new Date(),
   });
