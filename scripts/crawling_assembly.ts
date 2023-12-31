@@ -1,6 +1,7 @@
 import puppeteer, { Browser, ElementHandle, Handler, Page } from "puppeteer";
 import { writeImageByElement, writeJsonFile } from "@lib/file";
 import path from "path";
+import fs from "fs";
 import sleep from "@lib/sleep";
 import { $, $$ } from "@lib/selector";
 
@@ -9,42 +10,53 @@ import { $, $$ } from "@lib/selector";
     // headless: false,
     slowMo: 50,
   });
-  const page = await browser.newPage();
-  await page.goto(
-    "https://open.assembly.go.kr/portal/assm/search/memberSchPage.do"
-  );
+  try {
+    const page = await browser.newPage();
+    await page.goto(
+      "https://open.assembly.go.kr/portal/assm/search/memberSchPage.do"
+    );
 
-  await page.setViewport({ width: 1920, height: 1080 });
+    await page.setViewport({ width: 1920, height: 1080 });
 
-  const pictureBtn = await $(page, "#tab-btn-sect a:nth-child(2)");
-  await pictureBtn?.click();
+    const pictureBtn = await $(page, "#tab-btn-sect a:nth-child(2)");
+    await pictureBtn?.click();
 
-  const selector = "a.nassem_reslut_pic img";
-  const elements = await $$(page, selector);
+    const selector = "a.nassem_reslut_pic img";
+    const elements = await $$(page, selector);
 
-  for (const el of elements) {
-    await createCandidateInfoFromNewTab(page, browser, el);
-  }
+    for (const el of elements) {
+      await createCandidateInfoFromNewTab(page, browser, el);
+    }
 
-  //페이지네이션 순회
-  let i = 0;
-  let length = 11;
-  for (let i = 0; i < length; i++) {
-    const selector = "#pic-sect-pager strong + a.page-number";
-    const p = await $(page, selector, { timeout: 5000 });
-    console.log("p : ", p);
-    if (p) {
-      await p.click();
+    //페이지네이션 순회
+    let i = 0;
+    let length = 11;
+    for (let i = 0; i < length; i++) {
+      const selector = "#pic-sect-pager strong + a.page-number";
+      const p = await $(page, selector, { timeout: 5000 });
+      console.log("p : ", p);
+      if (p) {
+        await p.click();
 
-      // 의원 순회
-      const selector = "a.nassem_reslut_pic img";
-      const elements = await $$(page, selector);
-      for (const el of elements) {
-        await createCandidateInfoFromNewTab(page, browser, el);
+        // 의원 순회
+        const selector = "a.nassem_reslut_pic img";
+        const elements = await $$(page, selector);
+        for (const el of elements) {
+          await createCandidateInfoFromNewTab(page, browser, el);
+        }
       }
     }
+
+    const numOfCandidates = await fs.readdirSync(
+      path.resolve("../data/candidates")
+    ).length;
+    if (numOfCandidates !== 300)
+      throw Error(`전체 의석수 300개 중 #{length}개만 크롤링 성공하였습니다`);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    await browser.close();
   }
-  await browser.close();
 })();
 
 function getIntroFromHTML(page: Page) {
