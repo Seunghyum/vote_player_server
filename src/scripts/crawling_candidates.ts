@@ -128,14 +128,14 @@ async function createCandidateInfoFromNewTab(
   const history = await getHistoryFromHTML(newPage);
   const koName = await getKoNameFromHTML(newPage);
   const enName = await getEnNameFromUrl(newPage);
-  const partName = await getPartyNameFromHTML(newPage);
+  const partyName = await getPartyNameFromHTML(newPage);
 
   const obj = {
     enName,
     intro,
     history,
     koName,
-    partName,
+    partyName,
   };
 
   const imageElement = await $(newPage, ".img-set .img");

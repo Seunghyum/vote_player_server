@@ -1,10 +1,11 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const CandidatesSchema = new mongoose.Schema(
   {
+    id: Schema.ObjectId,
     enName: String,
     koName: String,
-    partName: String,
+    partyName: String,
     intro: {
       electoralDistrict: String,
       affiliatedCommittee: String,

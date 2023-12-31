@@ -9,4 +9,10 @@ router.get("/", function (req, res, next) {
   });
 });
 
+router.get("/:id", function (req, res, next) {
+  Candidates.findOne({ _id: req.params.id }).then((candidates) => {
+    res.json(candidates);
+  });
+});
+
 export default router;
