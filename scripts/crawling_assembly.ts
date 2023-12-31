@@ -7,6 +7,11 @@ import { $, $$ } from "@lib/selector";
 import { defaultTimeFormat } from "@lib/date";
 
 (async () => {
+  const candidatesFolderPath = path.relative(__dirname, "../data/candidates");
+  if (fs.existsSync(candidatesFolderPath)) {
+    fs.rmSync(candidatesFolderPath, { recursive: true, force: true });
+  }
+
   const browser = await puppeteer.launch({
     // headless: false,
     slowMo: 50,
@@ -48,18 +53,13 @@ import { defaultTimeFormat } from "@lib/date";
       }
     }
 
-    const numOfCandidates = await fs.readdirSync(
-      path.resolve("../data/candidates")
-    ).length;
+    const numOfCandidates = await fs.readdirSync(candidatesFolderPath).length;
 
-    const sourcePath = path.resolve(__dirname, "../data/candidates");
     const zipPath = path.resolve(
       __dirname,
-      `../data/candidates/candidates/candidates-${defaultTimeFormat(
-        new Date()
-      )}.zip`
+      `../data/candidates/-${defaultTimeFormat(new Date())}.zip`
     );
-    await zipDirectory(sourcePath, zipPath);
+    await zipDirectory(candidatesFolderPath, zipPath);
     if (numOfCandidates !== 300)
       throw Error(`전체 의석수 300개 중 #{length}개만 크롤링 성공하였습니다`);
   } catch (err) {
