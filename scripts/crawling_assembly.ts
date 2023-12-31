@@ -33,13 +33,15 @@ import { defaultTimeFormat } from "@lib/date";
     const selector = "a.nassem_reslut_pic img";
     const elements = await $$(page, selector);
     const candidatesPerPage = elements.length;
-    const numOfPagination = elements.length + 1;
 
-    for (const el of elements) {
-      await createCandidateInfoFromNewTab(page, browser, el);
-    }
+    // 첫페이지 크롤링
+    if (elements.length === 0)
+      throw Error("첫 페이지의 의원 수가 0이 될 수 없습니다");
+
+    await iterateCandidatesInPage(page, browser);
 
     //페이지네이션 순회
+    let numOfPagination = 0;
     let i = 0;
     let length = 11;
     for (let i = 0; i < length; i++) {
@@ -50,11 +52,10 @@ import { defaultTimeFormat } from "@lib/date";
         await p.click();
 
         // 의원 순회
-        const selector = "a.nassem_reslut_pic img";
-        const elements = await $$(page, selector);
-        for (const el of elements) {
-          await createCandidateInfoFromNewTab(page, browser, el);
-        }
+        await iterateCandidatesInPage(page, browser);
+      } else {
+        numOfPagination = i;
+        break;
       }
     }
 
@@ -62,17 +63,17 @@ import { defaultTimeFormat } from "@lib/date";
 
     const zipPath = path.resolve(
       __dirname,
-      `../data/candidates/-${defaultTimeFormat(new Date())}.zip`
+      `../data/candidates-${defaultTimeFormat(new Date())}.zip`
     );
     await zipDirectory(candidatesFolderPath, zipPath);
     if (numOfCandidates !== 300)
       throw Error(
         `전체 의석수 300개 중 ${numOfCandidates}개만 크롤링 성공하였습니다.\n
         한 페이지당 총 ${candidatesPerPage}명의 의원.\n
-        페이지네이션 총 ${numOfPagination}개만 실행.`
+        페이지네이션 총 ${numOfPagination}개만 실행.\n`
       );
   } catch (err) {
-    console.error(err);
+    throw err;
   } finally {
     await browser.close();
   }
@@ -91,6 +92,14 @@ function getIntroFromHTML(page: Page) {
     }
     return obj;
   });
+}
+
+async function iterateCandidatesInPage(page: Page, browser: Browser) {
+  const selector = "a.nassem_reslut_pic img";
+  const elements = await $$(page, selector);
+  for (const el of elements) {
+    await createCandidateInfoFromNewTab(page, browser, el);
+  }
 }
 
 async function createCandidateInfoFromNewTab(
