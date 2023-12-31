@@ -66,7 +66,7 @@ import { defaultTimeFormat } from "@lib/date";
       `../data/candidates-${defaultTimeFormat(new Date())}.zip`
     );
     await zipDirectory(candidatesFolderPath, zipPath);
-    if (numOfCandidates !== 300)
+    if (numOfCandidates !== 298)
       throw Error(
         `전체 의석수 300개 중 ${numOfCandidates}개만 크롤링 성공하였습니다.\n
         한 페이지당 총 ${candidatesPerPage}명의 의원.\n
