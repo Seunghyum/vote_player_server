@@ -5,6 +5,7 @@
       "@lib/*": ["src/lib/*"],
       "@routes/*": ["src/routes/*"]
     },
+    "outDir": "dist",
     "target": "ESNext",
     "module": "commonjs",
     "esModuleInterop": true,
