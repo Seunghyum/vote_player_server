@@ -7,11 +7,13 @@
     "start": "npx ts-node -r tsconfig-paths/register scripts/crawling_assembly.ts"
   },
   "dependencies": {
+    "archiver": "^6.0.1",
     "date-fns": "^3.0.6",
     "puppeteer": "^21.6.1",
     "typescript": "^5.3.3"
   },
   "devDependencies": {
+    "@types/archiver": "^6.0.2",
     "tsconfig-paths": "^4.2.0"
   }
 }

@@ -1,9 +1,10 @@
 import puppeteer, { Browser, ElementHandle, Handler, Page } from "puppeteer";
-import { writeImageByElement, writeJsonFile } from "@lib/file";
+import { writeImageByElement, writeJsonFile, zipDirectory } from "@lib/file";
 import path from "path";
 import fs from "fs";
 import sleep from "@lib/sleep";
 import { $, $$ } from "@lib/selector";
+import { defaultTimeFormat } from "@lib/date";
 
 (async () => {
   const browser = await puppeteer.launch({
@@ -50,6 +51,15 @@ import { $, $$ } from "@lib/selector";
     const numOfCandidates = await fs.readdirSync(
       path.resolve("../data/candidates")
     ).length;
+
+    const sourcePath = path.resolve(__dirname, "../data/candidates");
+    const zipPath = path.resolve(
+      __dirname,
+      `../data/candidates/candidates/candidates-${defaultTimeFormat(
+        new Date()
+      )}.zip`
+    );
+    await zipDirectory(sourcePath, zipPath);
     if (numOfCandidates !== 300)
       throw Error(`전체 의석수 300개 중 #{length}개만 크롤링 성공하였습니다`);
   } catch (err) {

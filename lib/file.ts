@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import archiver from "archiver";
 import { defaultTimeFormat } from "./date";
 import { ElementHandle } from "puppeteer";
 
@@ -44,4 +45,19 @@ interface writeImageByElementProps {
   element: ElementHandle<Element>;
   fileName: string;
   folderPath: string;
+}
+
+export function zipDirectory(sourceDirPath: string, outPath: string) {
+  const archive = archiver("zip", { zlib: { level: 9 } });
+  const stream = fs.createWriteStream(outPath);
+
+  return new Promise<void>((resolve, reject) => {
+    archive
+      .directory(sourceDirPath, false)
+      .on("error", (err) => reject(err))
+      .pipe(stream);
+
+    stream.on("close", () => resolve());
+    archive.finalize();
+  });
 }
