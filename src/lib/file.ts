@@ -1,7 +1,6 @@
 import fs from "fs";
-import path from "path";
 import archiver from "archiver";
-import { defaultTimeFormat } from "./date";
+import { defaultTimeFormat } from "@lib/date";
 import { ElementHandle } from "puppeteer";
 
 export function writeJsonFile({
