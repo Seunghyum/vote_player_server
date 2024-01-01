@@ -9,7 +9,7 @@ router.get("/", async (req, res, next) => {
   const cp = parseInt(currentPage as string);
 
   let isQueryExist = !!koName || !!partyName;
-  const query = isQueryExist ? { $or: [{ koName }, { partyName }] } : {};
+  const query = isQueryExist ? { koName: { $regex: koName } } : {};
 
   const result = await Candidates.find(query)
     .skip(pc * cp)
