@@ -8,8 +8,10 @@ router.get("/", async (req, res, next) => {
   const pc = parseInt(pageCount as string);
   const cp = parseInt(currentPage as string);
 
-  const result = await Candidates.find()
-    .or([{ koName }, { partyName }])
+  let isQueryExist = !!koName || !!partyName;
+  const query = isQueryExist ? { $or: [{ koName }, { partyName }] } : {};
+
+  const result = await Candidates.find(query)
     .skip(pc * cp)
     .limit(pc);
 
