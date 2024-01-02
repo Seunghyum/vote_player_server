@@ -12,19 +12,20 @@ import { $, $$ } from "@lib/selector";
 import { defaultTimeFormat } from "@lib/date";
 import { koNameToEnName } from "@constants/column_name_map";
 
+const 의원검색페이지 =
+  "https://open.assembly.go.kr/portal/assm/search/memberSchPage.do";
+
 (async () => {
   const candidatesFolderPath = path.resolve(__dirname, "../../data/candidates");
   removeDirIfExist(candidatesFolderPath);
 
   const browser = await puppeteer.launch({
-    // headless: false,
+    headless: false,
     slowMo: 50,
   });
   try {
     const page = await browser.newPage();
-    await page.goto(
-      "https://open.assembly.go.kr/portal/assm/search/memberSchPage.do"
-    );
+    await page.goto(의원검색페이지);
 
     await page.setViewport({ width: 1920, height: 1080 });
 
@@ -88,7 +89,9 @@ function getIntroFromHTML(page: Page) {
 
       for (const item of list) {
         const key = item.querySelector("dt")?.innerText?.replace(/\s/g, "");
-        const value = item.querySelector("dd")?.innerText;
+        const value = item
+          .querySelector("dd")
+          ?.innerText.replaceAll("\n\n", "\n");
         if (key !== undefined) {
           obj[koNameToEnName[key as keyof typeof koNameToEnName]] = value;
         }
@@ -102,43 +105,41 @@ function getIntroFromHTML(page: Page) {
 async function iterateCandidatesInPage(page: Page, browser: Browser) {
   const selector = "a.nassem_reslut_pic img";
   const elements = await $$(page, selector);
+
   console.log("elements length : ", elements.length);
   for (const el of elements) {
-    await createCandidateInfoFromNewTab(page, browser, el);
+    await el.click();
+    const newPage = await getCurrentPage(page);
+    if (newPage === null) throw Error("newPage가 null일 수 없습니다");
+
+    await createCandidateInfoFromPage(newPage, browser, el);
+
+    await newPage.close();
   }
 }
 
-async function createCandidateInfoFromNewTab(
-  page: Page,
-  browser: Browser,
-  element: ElementHandle<Element>
-) {
-  const waitForWindow = new Promise((resolve: Handler<Page | null>) =>
+function getCurrentPage(page: Page) {
+  return new Promise((resolve: Handler<Page | null>) =>
     page.on("popup", resolve)
   );
+}
 
-  await element.click();
-  const newPage = await waitForWindow;
+async function createCandidateInfoFromPage(
+  page: Page,
+  browser: Browser,
+  el: ElementHandle<Element>
+) {
+  if (!page) return browser.close;
 
-  if (!newPage) return browser.close;
-
-  await newPage.setViewport({ width: 1920, height: 1080 });
+  await page.setViewport({ width: 1920, height: 1080 });
   await sleep(500);
-  const intro = await getIntroFromHTML(newPage);
-  const history = await getHistoryFromHTML(newPage);
-  const koName = await getKoNameFromHTML(newPage);
-  const enName = await getEnNameFromUrl(newPage);
-  const partyName = await getPartyNameFromHTML(newPage);
+  const intro = await getIntroFromHTML(page);
+  const history = await getHistoryFromHTML(page);
+  const koName = await getKoNameFromHTML(page);
+  const enName = await getEnNameFromUrl(page);
+  const partyName = await getPartyNameFromHTML(page);
 
-  const obj = {
-    enName,
-    intro,
-    history,
-    koName,
-    partyName,
-  };
-
-  const imageElement = await $(newPage, ".img-set .img");
+  const imageElement = await $(page, ".img-set .img");
   if (imageElement)
     await writeImageByElement({
       element: imageElement,
@@ -146,21 +147,70 @@ async function createCandidateInfoFromNewTab(
       fileName: `${enName}.png`,
     });
   else console.log(`${enName}.png image not created. check out`);
+
+  const 의정활동menu = await $(page, ".menu li:nth-child(2)");
+  await 의정활동menu?.click();
+
+  const bills = await get의정활동TableFromHTML(page);
+
+  const obj = {
+    enName,
+    ...intro,
+    history,
+    koName,
+    partyName,
+    bills,
+  };
+
   writeJsonFile({
     obj,
     folderPath: path.resolve(__dirname, "../../data/candidates"),
     fileName: `${enName}.json`,
     dateTime: new Date(),
   });
+}
 
-  await newPage.close();
+async function get의정활동TableFromHTML(page: Page) {
+  await await $$(page, "#prpl_cont__repbill__list tr");
+  return page.$$eval("#prpl_cont__repbill__list tr", (list) => {
+    const arr = [];
+    for (const item of list) {
+      const obj: { [key: string]: string | null | undefined } = {};
+      const 대수 = item.querySelector(".list__ageNm")?.getAttribute("title");
+      const 의안명 = item
+        .querySelector(".board_subject100.list__billName")
+        ?.getAttribute("title");
+      const 제안자 = item
+        .querySelector(".list__proposer")
+        ?.getAttribute("title");
+      const 소관위원회 = item
+        .querySelector(".list__currCommittee")
+        ?.getAttribute("title");
+      const 작성일 = item
+        .querySelector(".list__proposeDt")
+        ?.getAttribute("title");
+      const 처리상태 = item
+        .querySelector(".list__procResultCd")
+        ?.getAttribute("title");
+
+      obj["nth"] = 대수;
+      obj["name"] = 의안명;
+      obj["proposers"] = 제안자;
+      obj["committee"] = 소관위원회;
+      obj["date"] = 작성일;
+      obj["status"] = 처리상태;
+
+      arr.push(obj);
+    }
+    return arr;
+  });
 }
 
 function getHistoryFromHTML(page: Page) {
   return page.$eval(".profile pre", (el) => {
     const value = el?.innerText;
 
-    return value;
+    return value.replaceAll("\n\n", "\n");
   });
 }
 function getEnNameFromUrl(page: Page) {
