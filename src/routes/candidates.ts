@@ -15,7 +15,8 @@ router.get("/", async (req, res, next) => {
     .skip(pc * cp)
     .limit(pc);
 
-  res.json(result);
+  const count = await Candidates.find().countDocuments();
+  res.json({ result, summary: { count } });
 });
 
 router.get("/:id", function (req, res, next) {
