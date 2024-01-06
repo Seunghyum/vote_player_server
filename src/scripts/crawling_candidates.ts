@@ -166,7 +166,6 @@ async function createCandidateInfoFromPage(
     obj,
     folderPath: path.resolve(__dirname, "../../data/candidates"),
     fileName: `${enName}.json`,
-    dateTime: new Date(),
   });
 }
 

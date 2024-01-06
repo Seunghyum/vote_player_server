@@ -7,10 +7,8 @@ export function writeJsonFile({
   obj,
   fileName,
   folderPath,
-  dateTime = new Date(),
 }: writeJsonFileProps) {
   const json = JSON.stringify(obj);
-  const folderName = defaultTimeFormat(dateTime);
 
   if (!fs.existsSync(folderPath)) {
     fs.mkdirSync(folderPath, { recursive: true });
@@ -20,9 +18,8 @@ export function writeJsonFile({
 }
 
 interface writeJsonFileProps {
-  obj: object;
+  obj: object | Object[];
   fileName: string;
-  dateTime: Date;
   folderPath: string;
 }
 

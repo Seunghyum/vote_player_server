@@ -5,7 +5,8 @@
       "@lib/*": ["src/lib/*"],
       "@routes/*": ["src/routes/*"],
       "@models/*": ["src/models/*"],
-      "@constants/*": ["src/constants/*"]
+      "@constants/*": ["src/constants/*"],
+      "@scripts/*": ["src/scripts/*"]
     },
     "outDir": "dist",
     "target": "ESNext",
