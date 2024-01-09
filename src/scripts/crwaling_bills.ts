@@ -7,10 +7,8 @@ import { iterateAllBills } from "@scripts/utils/bills";
 const 대표법안페이지 =
   "https://www.assembly.go.kr/portal/assm/assmPrpl/prplMst.do?monaCd=WCD5518S&st=21&viewType=CONTBODY";
 
-getBillsWithPagination();
-
-async function getBillsWithPagination() {
-  const billsFolderPath = path.resolve(__dirname, "../../data/bills");
+(async () => {
+  const billsFolderPath = path.resolve(__dirname, "../../samples/bills");
   removeDirIfExist(billsFolderPath);
 
   const browser = await puppeteer.launch({
@@ -27,7 +25,7 @@ async function getBillsWithPagination() {
 
     writeJsonFile({
       obj: bills,
-      folderPath: path.resolve(__dirname, "../../data/bills"),
+      folderPath: path.resolve(__dirname, "../../samples/bills"),
       fileName: "sample_bills.json",
     });
 
@@ -39,4 +37,4 @@ async function getBillsWithPagination() {
   } finally {
     await browser.close();
   }
-}
+})();
