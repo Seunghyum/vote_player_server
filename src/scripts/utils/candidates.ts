@@ -92,7 +92,7 @@ async function createCandidateInfoFromPage(page: Page, browser: Browser) {
 }
 
 function getHistoryFromHTML(page: Page) {
-  return page.$eval(".profile pre", (el) => {
+  return page.$eval("ul.list pre", (el) => {
     const value = el?.innerText;
 
     return value.replaceAll("\n\n", "\n");
@@ -104,16 +104,16 @@ function getEnNameFromUrl(page: Page) {
 }
 
 function getKoNameFromHTML(page: Page) {
-  return page.$eval(".tit strong", (el) => {
+  return page.$eval("div.mamber_name", (el) => {
     const value = el?.innerText;
-    const name = value.split(" ")[0];
+    const name = value.split("(")[0];
 
     return name;
   });
 }
 
 function getPartyNameFromHTML(page: Page) {
-  return page.$eval(".tit dd", (el) => {
+  return page.$eval("div.member_assem_dang", (el) => {
     const value = el?.innerText;
 
     return value;
