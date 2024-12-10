@@ -9,7 +9,8 @@
     "start": "node dist/app.js",
     "crawling": "npx ts-node -r tsconfig-paths/register ./src/scripts/crawling.ts",
     "crawling:candidates": "npx ts-node -r tsconfig-paths/register ./src/scripts/crawling_candidates.ts",
-    "crawling:bills": "npx ts-node -r tsconfig-paths/register ./src/scripts/crwaling_bills.ts",
+    "crawling:bills": "npx ts-node -r tsconfig-paths/register ./src/scripts/발의_의안.ts",
+    "crawling:bills:collabills": "npx ts-node -r tsconfig-paths/register ./src/scripts/공동발의_의안.ts",
     "mongo:import:candidates": "zx ./shell/mongo-import-candidates.mjs"
   },
   "dependencies": {
@@ -18,7 +19,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "mongoose": "^8.0.3",
-    "puppeteer": "^21.6.1",
+    "puppeteer": "^23.10.2",
     "typescript": "^5.3.3"
   },
   "devDependencies": {
