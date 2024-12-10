@@ -17,18 +17,16 @@ const 의원검색페이지 =
   removeDirIfExist(candidatesFolderPath);
 
   const browser = await puppeteer.launch({
-    // headless: false,
+    headless: false,
     slowMo: 50,
   });
   try {
     const page = await browser.newPage();
-    await page.goto(의원검색페이지);
-
     await page.setViewport({ width: 1920, height: 1080 });
-
-    const pictureBtn = await $(page, "#tab-btn-sect a:nth-child(2)");
-    await pictureBtn?.click();
-
+    await page.goto(의원검색페이지, {timeout: 60 * 1000});
+    const 사진보기btn = await $(page, '//a[contains(text(), "사진보기")]');
+    if(!사진보기btn) throw Error('사진보기btn이 없습니다')
+    await 사진보기btn.click();
     const selector = "a.nassem_reslut_pic img";
     const elements = await $$(page, selector);
     const candidatesPerPage = elements.length;

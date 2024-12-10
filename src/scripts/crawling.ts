@@ -14,8 +14,8 @@ const 의원검색페이지 =
   removeDirIfExist(candidatesFolderPath);
 
   const browser = await puppeteer.launch({
-    headless: false,
-    slowMo: 50,
+    // headless: false,
+    slowMo: 10,
   });
   try {
     const page = await browser.newPage();
@@ -33,11 +33,12 @@ const 의원검색페이지 =
     // 첫페이지 크롤링
     if (elements.length === 0)
       throw Error("첫 페이지의 의원 수가 0이 될 수 없습니다");
-    console.log("page : 1");
     //페이지네이션 순회
     let numOfPagination = 0;
     let length = 11;
+    let pageCount = 0
     for (let i = 0; i < length; i++) {
+      console.log(`page : ${pageCount}`);
       // 의원 순회
       await iterateCandidatesInPage(page, browser);
       const selector = "#pic-sect-pager strong + a.page-number";
@@ -48,7 +49,8 @@ const 의원검색페이지 =
       } else {
         numOfPagination = i + 1;
         break;
-      }
+      } 
+      pageCount++
     }
 
     const numOfCandidates = await fs.readdirSync(candidatesFolderPath).length;

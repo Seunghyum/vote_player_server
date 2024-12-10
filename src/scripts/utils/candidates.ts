@@ -1,7 +1,7 @@
 import type { Browser, Handler, Page } from "puppeteer";
 import { writeImageByElement, writeJsonFile } from "@lib/file";
 import path from "path";
-import fs from "fs";
+
 import sleep from "@lib/sleep";
 import { $, $$ } from "@lib/selector";
 import { koNameToEnName } from "@constants/column_name_map";
@@ -29,10 +29,9 @@ function getIntroFromHTML(page: Page) {
 }
 
 export async function iterateCandidatesInPage(page: Page, browser: Browser) {
-  const selector = "a.nassem_reslut_pic img";
+  const selector = "a.nassem_reslut_pic";
   const elements = await $$(page, selector);
 
-  console.log("elements length : ", elements.length);
   for (const el of elements) {
     await el.click();
     const newPage = await getCurrentPage(page);
@@ -54,7 +53,7 @@ async function createCandidateInfoFromPage(page: Page, browser: Browser) {
   if (!page) return browser.close;
 
   await page.setViewport({ width: 1920, height: 1080 });
-  await sleep(500);
+  await sleep(1000);
   const intro = await getIntroFromHTML(page);
   const history = await getHistoryFromHTML(page);
   const koName = await getKoNameFromHTML(page);
@@ -70,10 +69,15 @@ async function createCandidateInfoFromPage(page: Page, browser: Browser) {
     });
   else console.log(`${enName}.png image not created. check out`);
 
-  const 의정활동menu = await $(page, ".menu li:nth-child(2)");
-  await 의정활동menu?.click();
+  const 의정활동menu = await $(page, "//*[@class='menu']//a[contains(text(),'의원소개')]");
+  if(!의정활동menu) throw Error('대표발의 의안을 크롤링하지 못하였습니다.')
+  await 의정활동menu.click();
+  const bills = await iterateAllBills(browser, page);
 
-  const bills = await iterateAllBills(page);
+  const 공동발의_의안menu = await $(page, "li[data-id='collabill'] a");
+  if(!공동발의_의안menu) throw Error('공동발의 의안을 크롤링하지 못하였습니다.')
+  await 공동발의_의안menu.click();
+  const collabills =  await iterateAllBills(browser, page);
 
   const obj = {
     enName,
@@ -82,6 +86,7 @@ async function createCandidateInfoFromPage(page: Page, browser: Browser) {
     koName,
     partyName,
     bills,
+    collabills,
   };
 
   writeJsonFile({

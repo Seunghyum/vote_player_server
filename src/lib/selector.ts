@@ -3,7 +3,7 @@ import { Page, WaitForSelectorOptions } from "puppeteer";
 export async function $(
   page: Page,
   selector: string,
-  options: WaitForSelectorOptions = { timeout: 10000 }
+  options: WaitForSelectorOptions = { timeout: 10000, visible: true }
 ) {
   try {
     await page.waitForSelector(selector, options);
@@ -23,4 +23,9 @@ export async function $$(
   } catch (err) {
     return [];
   }
+}
+
+export async function $evalInnerHTML(page:Page, selector: string)  {
+  return page.$eval(selector, (el) => el.innerHTML)
+
 }
