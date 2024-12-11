@@ -8,9 +8,9 @@ export async function iterateAllBills(browser: Browser, page: Page) {
   let isNextExist = true;
   let findNextPageBtn = async (page: Page, num: number) => {
     const 다음버튼sel = `//*[@class='page-number' and contains(text(), '${num}')]`
-    const target = await page.$(다음버튼sel)
+    const target = await $(page, 다음버튼sel)
     if( !target?.isVisible) {
-      return await page.$(다음버튼sel)
+      return await $(page, 다음버튼sel)
     } else  {
       isNextExist = false
       return null
@@ -28,7 +28,6 @@ export async function iterateAllBills(browser: Browser, page: Page) {
 
 
 export async function iteratsBillssInPage(browser: Browser, page: Page) {
-  await $$(page, "#prpl_cont__repbill__list tr");
   return $$(page, "#prpl_cont__repbill__list tr").then(async (list) => {
       const arr = [];
       for (const item of list) {
@@ -62,7 +61,7 @@ export async function iteratsBillssInPage(browser: Browser, page: Page) {
           }
           
           await page.close();
-          console.log('obj:', obj )
+          // console.log('obj:', obj )
           arr.push(obj);
       }
       console.log('arr.length : ', arr.length)

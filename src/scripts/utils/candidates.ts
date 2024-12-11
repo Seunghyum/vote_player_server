@@ -69,7 +69,7 @@ async function createCandidateInfoFromPage(page: Page, browser: Browser) {
     });
   else console.log(`${enName}.png image not created. check out`);
 
-  const 의정활동menu = await $(page, "//*[@class='menu']//a[contains(text(),'의원소개')]");
+  const 의정활동menu = await $(page, "//*[@class='menu']//a[contains(text(),'의정활동')]");
   if(!의정활동menu) throw Error('대표발의 의안을 크롤링하지 못하였습니다.')
   await 의정활동menu.click();
   const bills = await iterateAllBills(browser, page);

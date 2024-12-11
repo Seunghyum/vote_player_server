@@ -19,7 +19,7 @@ const 의원검색페이지 =
   });
   try {
     const page = await browser.newPage();
-    await page.goto(의원검색페이지);
+    await page.goto(의원검색페이지, {waitUntil: 'networkidle0'});
 
     await page.setViewport({ width: 1920, height: 1080 });
 
