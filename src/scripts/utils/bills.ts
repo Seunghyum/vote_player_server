@@ -1,39 +1,59 @@
 import { $, $$ } from "@lib/selector";
 import { Browser, Page } from "puppeteer";
 import { getNewBrowserTab } from "./page";
+import chalk from "chalk";
 
-export async function iterateAllBills(browser: Browser, page: Page) {
-  let i = 1;
-  let bills: Object[] = [];
-  let isNextExist = true;
-  let findNextPageBtn = async (page: Page, num: number) => {
-    const 다음버튼sel = `//*[@class='page-number' and contains(text(), '${num}')]`
-    const target = await $(page, 다음버튼sel)
-    if( !target?.isVisible) {
-      return await $(page, 다음버튼sel)
-    } else  {
-      isNextExist = false
-      return null
+interface iterateAllBillsProps{
+  browser: Browser
+  page: Page
+  is대표발의: boolean
+}
+export async function iterateAllBills({browser, page, is대표발의}:iterateAllBillsProps) {
+  let pageNum = 1;
+  let bills = [...(await iteratsBillssInPage({browser, page, is대표발의}))];
+  while (true) {
+    if((await checkNextBillPageExist(page)) === false) {
+      break;
     }
-  }
-  while (isNextExist) {
-    bills = [...bills, ...(await iteratsBillssInPage(browser, page))];
-    const nextBtn = await findNextPageBtn(page, ++i);
-    await nextBtn?.click();
-    isNextExist = !!nextBtn;
+    const 다음버튼 = await findPaginationNextButton(page)
+    await 다음버튼?.click();
+    const 변경된_현재버튼 = `//em[@title='현재목록' and contains(text(), '${pageNum + 1}')]`
+    console.log('변경된_현재버튼 : ', 변경된_현재버튼)
+    await $(page, 변경된_현재버튼, {timeout: 20 * 1000}) // 페이지네이션 js 로드
+    pageNum++
+    bills = [...bills, ...(await iteratsBillssInPage({browser, page, is대표발의}))];
+    console.log('페이지 num :', pageNum)
   }
   return bills;
 }
+function findCurrentPagePagination(page: Page) {
+  return  $$(page, '.paginationSet').then(e => e[e.length-1]) // NOTE 공동법안 화면 안에 대표법안 페이지네이션 엘리먼트가 남아있어서 마지막 엘리먼트 추적.  
+}
+async function findPaginationNextButton(page: Page) {
+  return (await findCurrentPagePagination(page)).$('.i.next')
+}
+async function findPaginationCurrentPage(page: Page) {
+  return (await findCurrentPagePagination(page)).$('li.active')
+}
 
+async function checkNextBillPageExist (page:Page) {
+  const 현재버튼 = await findPaginationCurrentPage(page)
+  return 현재버튼?.evaluate(e => {
+    if(e.nextElementSibling === null) {
+      throw Error('다음 버튼이 없습니다.')
+    }
+    console.log('다음버튼 : ', e.nextElementSibling.getAttribute('class'))
+    return !e.nextElementSibling.getAttribute('class')?.includes('disabled')
+  })
+}
 
-
-export async function iteratsBillssInPage(browser: Browser, page: Page) {
-  return $$(page, "#prpl_cont__repbill__list tr").then(async (list) => {
+export async function iteratsBillssInPage({ browser, page, is대표발의 }: iterateAllBillsProps) {
+  return $$(page, `#${is대표발의 ? 'prpl_cont__repbill__list' : 'prpl_cont__collabill__list'} tr`).then(async (list) => {
       const arr = [];
       for (const item of list) {
           const obj: { [key: string]: string | null | undefined } = {};
           const 대수 = await item.$eval(".list__ageNm", (el) => el.innerHTML)
-          const 의안명 = await item.$eval(".board_subject100.list__billName", (el) => el.getAttribute('title'))
+          const 의안명 = await item.$eval(".list__billName", (el) => el.getAttribute('title'))
           const 제안자 = await item.$eval(".list__proposer", (el) => el.getAttribute('title'))
           const 소관위원회 = await item.$eval(".list__currCommittee", (el) => el.getAttribute('title'))
           const 작성일 = await item.$eval(".list__proposeDt", (el) => el.getAttribute('title'))
@@ -52,19 +72,22 @@ export async function iteratsBillssInPage(browser: Browser, page: Page) {
               await ('//*[contains(text(), "의안접수정보")]')
               await page.waitForSelector('.contIn .tableCol01 table tbody tr td', {timeout: 10000})
               const 의안ID = await page.$eval('.contIn .tableCol01 table tbody tr td',(el) => el.innerText)
-              obj["billId"] = 의안ID
+              obj["billNo"] = 의안ID
               await page.waitForSelector('#summaryContentDiv', {timeout: 10000})
               const 제안이유_및_주요내용Div = await page.$eval('#summaryContentDiv', (el) => el.innerHTML)
               obj["summary"] = 제안이유_및_주요내용Div
+              const 법안상세url = await page.url();
+              obj["billDetailUrl"] = 법안상세url
           } catch(err) {
               console.log(`${의안명} ${제안자} ${소관위원회}`)
           }
           
+          console.log(chalk.blue(`===#1 의안명: ${의안명}`), chalk.yellow(`제안자 길이: ${제안자}`))
           await page.close();
           // console.log('obj:', obj )
           arr.push(obj);
       }
-      console.log('arr.length : ', arr.length)
+      // console.log('arr.length : ', arr.length)
       return arr;
   });
 }

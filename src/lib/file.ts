@@ -3,6 +3,9 @@ import archiver from "archiver";
 import { defaultTimeFormat } from "@lib/date";
 import { ElementHandle } from "puppeteer";
 
+export const filenameTime = defaultTimeFormat(new Date())
+const filePath = `../../data/candidates-${filenameTime}`
+
 export function writeJsonFile({
   obj,
   fileName,
@@ -45,7 +48,7 @@ interface writeImageByElementProps {
 
 export function zipDirectory(sourceDirPath: string, outPath: string) {
   const archive = archiver("zip", { zlib: { level: 9 } });
-  const stream = fs.createWriteStream(outPath);
+  const stream = fs.createWriteStream(`${outPath}-${filePath}`);
 
   return new Promise<void>((resolve, reject) => {
     archive

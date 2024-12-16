@@ -1,21 +1,20 @@
 import puppeteer from "puppeteer";
-import { removeDirIfExist, zipDirectory } from "@lib/file";
+import { filenameTime, removeDirIfExist, zipDirectory } from "@lib/file";
 import path from "path";
 import fs from "fs";
 import { $, $$ } from "@lib/selector";
-import { defaultTimeFormat } from "@lib/date";
 import { iterateCandidatesInPage } from "@scripts/utils/candidates";
 
 const 의원검색페이지 =
   "https://open.assembly.go.kr/portal/assm/search/memberSchPage.do";
 
 (async () => {
-  const candidatesFolderPath = path.resolve(__dirname, "../../data/candidates");
+  const candidatesFolderPath = path.resolve(__dirname, "../data/candidates");
   removeDirIfExist(candidatesFolderPath);
 
   const browser = await puppeteer.launch({
     // headless: false,
-    slowMo: 10,
+    // slowMo: 10,
   });
   try {
     const page = await browser.newPage();
@@ -57,7 +56,7 @@ const 의원검색페이지 =
 
     const zipPath = path.resolve(
       __dirname,
-      `../../data/candidates-${defaultTimeFormat(new Date())}.zip`
+      `../data/candidates-${filenameTime}.zip`
     );
     await zipDirectory(candidatesFolderPath, zipPath);
     if (numOfCandidates !== 298)

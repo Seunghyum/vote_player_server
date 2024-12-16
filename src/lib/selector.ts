@@ -1,4 +1,4 @@
-import { Page, WaitForSelectorOptions } from "puppeteer";
+import { ElementHandle, Page, WaitForSelectorOptions } from "puppeteer";
 
 export async function $(
   page: Page,
@@ -31,4 +31,16 @@ export async function $$(
   } catch (err) {
     return [];
   }
+}
+
+// TS
+export async function elementHasClass(
+  el: ElementHandle<Element>,
+  className: string,
+): Promise<boolean> {
+  const classNames = (
+    await (await el.getProperty('className')).jsonValue()
+  ).split(/\s+/);
+
+  return classNames.includes(className);
 }
