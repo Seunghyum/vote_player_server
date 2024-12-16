@@ -12,11 +12,13 @@
     "crawling:bills": "npx ts-node -r tsconfig-paths/register ./src/scripts/발의_의안.test.ts",
     "crawling:bills:collabills": "npx ts-node -r tsconfig-paths/register ./src/scripts/공동발의_의안.test.ts",
     "mongo:import:candidates": "zx ./shell/mongo-import-candidates.mjs",
-    "mongo:drop:candidates": "zx ./shell/mongo-drop-candidates.mjs"
+    "mongo:drop:candidates": "zx ./shell/mongo-drop-candidates.mjs",
+    "api:import:candidates": "npx ts-node -r tsconfig-paths/register ./src/apis/candidates_simple_api.ts"
   },
   "dependencies": {
     "archiver": "^6.0.1",
-    "chalk": "^4.7.0",
+    "axios": "^1.7.9",
+    "chalk": "^4.1.2",
     "date-fns": "^3.0.6",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",

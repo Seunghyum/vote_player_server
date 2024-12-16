@@ -10,27 +10,35 @@ interface iterateAllBillsProps{
 }
 export async function iterateAllBills({browser, page, is대표발의}:iterateAllBillsProps) {
   let pageNum = 1;
-  let bills = [...(await iteratsBillssInPage({browser, page, is대표발의}))];
+  // let bills: Object[] =[];
+  let bills = [...(await iteratsBillssInPage({browser, page, is대표발의}))]; // 첫페이지
   while (true) {
     if((await checkNextBillPageExist(page)) === false) {
       break;
     }
-    const 다음버튼 = await findPaginationNextButton(page)
-    await 다음버튼?.click();
-    const 변경된_현재버튼 = `//em[@title='현재목록' and contains(text(), '${pageNum + 1}')]`
-    console.log('변경된_현재버튼 : ', 변경된_현재버튼)
-    await $(page, 변경된_현재버튼, {timeout: 20 * 1000}) // 페이지네이션 js 로드
     pageNum++
+    await clickNextButton(page, pageNum)
+    const 변경된_현재버튼 = `//em[@title='현재목록' and contains(text(), '${pageNum}')]`
+    await $(page, 변경된_현재버튼, {timeout: 20 * 1000}) // 페이지네이션 js 로드
     bills = [...bills, ...(await iteratsBillssInPage({browser, page, is대표발의}))];
     console.log('페이지 num :', pageNum)
   }
   return bills;
 }
-function findCurrentPagePagination(page: Page) {
+async function findCurrentPagePagination(page: Page) {
   return  $$(page, '.paginationSet').then(e => e[e.length-1]) // NOTE 공동법안 화면 안에 대표법안 페이지네이션 엘리먼트가 남아있어서 마지막 엘리먼트 추적.  
 }
-async function findPaginationNextButton(page: Page) {
-  return (await findCurrentPagePagination(page)).$('.i.next')
+
+async function findPaginationNextPageinationButton(page: Page) {
+  return (await findCurrentPagePagination(page)).waitForSelector('.i.next')
+}
+
+async function clickNextButton(page:Page, num: number) {
+  const 현재버튼의_다음버튼 = await (await findCurrentPagePagination(page)).$(`::-p-xpath(//li[@class="active"]/following-sibling::li//a/span[contains(text(), ${num})])`)
+  if(!현재버튼의_다음버튼) {
+    throw Error('페이지네이션의 현재버튼의 다음 버튼이 없습니다.')
+  }
+  return 현재버튼의_다음버튼.click()
 }
 async function findPaginationCurrentPage(page: Page) {
   return (await findCurrentPagePagination(page)).$('li.active')
@@ -42,7 +50,6 @@ async function checkNextBillPageExist (page:Page) {
     if(e.nextElementSibling === null) {
       throw Error('다음 버튼이 없습니다.')
     }
-    console.log('다음버튼 : ', e.nextElementSibling.getAttribute('class'))
     return !e.nextElementSibling.getAttribute('class')?.includes('disabled')
   })
 }
