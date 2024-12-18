@@ -50,16 +50,16 @@ router.get("/:id/bills/", async function (req, res, next) {
       { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
 
       // 2. bills 배열을 펼치기
-      { $unwind: "$bills" },
+      { $unwind: `$${type}` },
 
       // 3. bills의 status 필드 조건 필터링
-      { $match: { "bills.status": { $in: status }}},
+      { $match: { [`${type}.status`]: { $in: status }}},
 
       // 4. 전체 bills 개수를 계산
       {
         $group: {
           _id: "$_id", // 후보 ID별 그룹화
-          bills: { $push: "$bills" }, // 필터링된 bills를 다시 배열로 묶음
+          bills: { $push: `$${type}` }, // 필터링된 bills를 다시 배열로 묶음
           totalBillsCount: { $sum: 1 }, // 필터링된 bills의 개수를 계산
         },
       },
@@ -78,7 +78,7 @@ router.get("/:id/bills/", async function (req, res, next) {
 
           // 페이지네이션 처리
           paginatedData: [
-            { $unwind: "$bills" }, // bills 배열을 다시 펼침
+            { $unwind: '$bills' }, // bills 배열을 다시 펼침
             { $skip: skipCount },  // 페이지 시작 위치 스킵
             { $limit: pageSize },  // 페이지 크기만큼 제한
             {
