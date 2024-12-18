@@ -4,14 +4,15 @@ import dotenv from "dotenv";
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 void (async function () {
-  const { MONGO_USERNAME, MONGO_PASSWORD } = process.env;
-
-  console.log(chalk.blue("==== mongoimport START ==="));
+  const { MONGO_USERNAME, MONGO_PASSWORD, MONGO_IMPORT_DADA_PATH } = process.env;
+  console.log(MONGO_USERNAME)
+  console.log(MONGO_PASSWORD)
+  console.log(MONGO_IMPORT_DADA_PATH)
   try {
     await $`
-      for file in /Users/seunghyunmoon/Code/Toy/vote_player_server/data/candidates/*.json; do
+      for file in ${MONGO_IMPORT_DADA_PATH}/candidates/*.json; do
         mongoimport --port 27017 \
-          --db mongo \
+          --db vote-player \
           --collection candidates \
           --file "$file" \
           --authenticationDatabase admin \

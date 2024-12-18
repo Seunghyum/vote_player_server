@@ -58,7 +58,7 @@ const 의원검색페이지 =
       `../data/candidates-${filenameTime}.zip`
     );
     await zipDirectory(candidatesFolderPath, zipPath);
-    if (numOfCandidates !== 298)
+    if (numOfCandidates !== 300)
       throw Error(
         `전체 의석수 300개 중 ${numOfCandidates}개만 크롤링 성공하였습니다.\n
         한 페이지당 총 ${candidatesPerPage}명의 의원.\n

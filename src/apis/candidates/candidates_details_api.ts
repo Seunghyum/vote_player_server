@@ -18,18 +18,21 @@ mongoose
   .then(() => console.log("Successfully connected to mongodb"))
   .catch((e) => console.error(e));
 
+interface getCandidatesSimplesProps {
+  dept_cd: String,
+  num: String
+}
 
-axios.get(`https://apis.data.go.kr/9710000/NationalAssemblyInfoService/getMemberCurrStateList`, {
-    params: {
-        serviceKey: CANDIDATE_API_KEY,
-        numOfRows: 300,
-        pageNo: 1
-    },
-}).then(async (res) => {
-    console.log(res.data.response.body.items.item)
-    const items = res.data.response.body.items.item
-    if(!items) throw Error('api 응답에 문제가 있습니다.')
-  const result = await candidatesSimple.insertMany(items)
-  console.log('result : ', result)
-}).catch(err => console.log('err : ', err));
-
+export function getCandidatesDetails({dept_cd, num}:getCandidatesSimplesProps) {
+  return axios.get(`https://apis.data.go.kr/9710000/NationalAssemblyInfoService/getMemberDetailInfoList`, {
+      params: {
+          dept_cd,
+          num,
+          serviceKey: CANDIDATE_API_KEY,
+          numOfRows: 10,
+          pageNo: 1
+      },
+  }).then(async (res) => {
+    return res.data.response.body.item
+  }).catch(err => console.log('err : ', err));
+}

@@ -13,7 +13,7 @@
     "crawling:bills:collabills": "npx ts-node -r tsconfig-paths/register ./src/scripts/공동발의_의안.test.ts",
     "mongo:import:candidates": "zx ./shell/mongo-import-candidates.mjs",
     "mongo:drop:candidates": "zx ./shell/mongo-drop-candidates.mjs",
-    "api:import:candidates": "npx ts-node -r tsconfig-paths/register ./src/apis/candidates_simple_api.ts"
+    "api:import:candidates": "npx ts-node -r tsconfig-paths/register ./src/apis/candidates/candidates.ts"
   },
   "dependencies": {
     "archiver": "^6.0.1",

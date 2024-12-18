@@ -2,6 +2,7 @@ import { $, $$ } from "@lib/selector";
 import { Browser, Page } from "puppeteer";
 import { getNewBrowserTab } from "./page";
 import chalk from "chalk";
+import sleep from "@lib/sleep";
 
 interface iterateAllBillsProps{
   browser: Browser
@@ -9,36 +10,81 @@ interface iterateAllBillsProps{
   is대표발의: boolean
 }
 export async function iterateAllBills({browser, page, is대표발의}:iterateAllBillsProps) {
-  let pageNum = 1;
-  // let bills: Object[] =[];
-  let bills = [...(await iteratsBillssInPage({browser, page, is대표발의}))]; // 첫페이지
+  let allBills: Object[] = []
+  let pageSetCount = 0 // 지금까지 크롤링한 총 페이지네이션 숫자를 추적하기 위한 변수
+  let i=0
   while (true) {
+    if(pageSetCount > 2000) throw Error(`해당 의원의 ${is대표발의 ? "대표" : '공동'} 발의 법안이 너무 많습니다. MAX 2000`)
+    const numOfPagesInSet = (await getNumOfPagesInCurrentPageSet(page))
+    allBills = [...allBills, ...(await iteratePageSet({browser, page, numOfPagesInSet, pageSetCount, is대표발의}))]
     if((await checkNextBillPageExist(page)) === false) {
       break;
     }
-    pageNum++
-    await clickNextButton(page, pageNum)
+    await clickNextPageSetBtn(page)
+    pageSetCount += 10
+    // await waitForPageButtonByNum(page, pageSetCount+1)
+    await sleep(5000)
+  }
+  return allBills;
+}
+
+interface iteratePageSetProps extends iterateAllBillsProps{
+  numOfPagesInSet:number
+  pageSetCount:number // 지금까지 크롤링한 총 페이지네이션 숫자를 추적하기 위한 변수 
+}
+async function iteratePageSet({browser, page, numOfPagesInSet, pageSetCount, is대표발의}: iteratePageSetProps){
+  console.log(chalk.bgBlue('지금까지 크롤링한 법안 수 : ', pageSetCount))
+  let bills = [...(await iteratsBillssInPage({browser, page, is대표발의}))];
+  console.log('페이지 num :', pageSetCount+1)
+  const pageNumArr = Array(numOfPagesInSet-1) // 첫페이지 제외하고 순회
+  .fill(0)
+  .map((a, i)=> pageSetCount+a+i+2)
+  // console.log(chalk.bgBlueBright('pageNumArr : ', pageNumArr))
+  for(const pageNum of pageNumArr) {
+    await clickNextPageButtonByNum(page, pageNum)
+    bills = [...bills, ...(await iteratsBillssInPage({browser, page, is대표발의}))];
     const 변경된_현재버튼 = `//em[@title='현재목록' and contains(text(), '${pageNum}')]`
     await $(page, 변경된_현재버튼, {timeout: 20 * 1000}) // 페이지네이션 js 로드
-    bills = [...bills, ...(await iteratsBillssInPage({browser, page, is대표발의}))];
     console.log('페이지 num :', pageNum)
   }
-  return bills;
+  return bills
 }
 async function findCurrentPagePagination(page: Page) {
   return  $$(page, '.paginationSet').then(e => e[e.length-1]) // NOTE 공동법안 화면 안에 대표법안 페이지네이션 엘리먼트가 남아있어서 마지막 엘리먼트 추적.  
+}
+
+async function getNumOfPagesInCurrentPageSet(page:Page) {
+  return (await (await findCurrentPagePagination(page)).$$('li')).length - 4 // NOTE: 페이지네이션 버튼( << | < | > | >> )을 제거한 개수
 }
 
 async function findPaginationNextPageinationButton(page: Page) {
   return (await findCurrentPagePagination(page)).waitForSelector('.i.next')
 }
 
-async function clickNextButton(page:Page, num: number) {
+async function clickNextPageSetBtn(page:Page) {
+  const nextPageSetBtn = await findPaginationNextPageinationButton(page)
+  if(nextPageSetBtn === null) throw Error('다음 페이지세트 버튼을 찾지 못했습니다.')
+  await nextPageSetBtn.click()
+}
+
+async function checkNextPageSetExist(page: Page) {
+  const nextPageSetBtn = await findPaginationNextPageinationButton(page)
+  return !nextPageSetBtn?.evaluate(e => e.getAttribute('class')?.includes('disabled'))
+}
+
+async function clickNextPageButtonByNum(page:Page, num: number) {
   const 현재버튼의_다음버튼 = await (await findCurrentPagePagination(page)).$(`::-p-xpath(//li[@class="active"]/following-sibling::li//a/span[contains(text(), ${num})])`)
   if(!현재버튼의_다음버튼) {
     throw Error('페이지네이션의 현재버튼의 다음 버튼이 없습니다.')
   }
   return 현재버튼의_다음버튼.click()
+}
+async function waitForPageButtonByNum(page:Page, num: number) {
+  const 현재버튼의_다음버튼 = await (await findCurrentPagePagination(page)).waitForSelector(`::-p-xpath(//li[@class="active"]//span[contains(text(), ${num})])`)
+  if(!현재버튼의_다음버튼) {
+    throw Error('페이지네이션의 현재버튼의 다음 버튼이 없습니다.')
+  }
+  return 현재버튼의_다음버튼
 }
 async function findPaginationCurrentPage(page: Page) {
   return (await findCurrentPagePagination(page)).$('li.active')
