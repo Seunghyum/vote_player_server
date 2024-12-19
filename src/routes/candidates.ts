@@ -39,7 +39,12 @@ router.get("/:id", function (req, res, next) {
 
 router.get("/:id/bills/", async function (req, res, next) {
   const {pageCount:limit = 15, page = 1, type = 'bills'} = req.query
-  const status = req.query.status ? [req.query.status.toString()] : ['가결','수정안반영폐기','대안반영폐기','임기만료폐기','계류','폐기','철회','부결']
+  let status:string[]
+  if(!req.query.status || req.query.status === '전체') {
+    status = ['가결','수정안반영폐기','대안반영폐기','임기만료폐기','계류','폐기','철회','부결']
+  } else {
+    status = [req.query.status.toString()]
+  }
 
   const pageNumber = parseInt(page.toString(), 10) || 1; // 기본값 1
     const pageSize = parseInt(limit.toString(), 10) || 10; // 기본값 10
@@ -113,8 +118,8 @@ router.get("/:id/bills/", async function (req, res, next) {
                     { $arrayElemAt: ["$totalData.total", 0] }, // total
                   ],
                 },
-                then: true,
-                else: false,
+                then: false,
+                else: true,
               },
             },
           },
