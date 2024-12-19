@@ -84,6 +84,7 @@ router.get("/:id/bills/", async function (req, res, next) {
           // 페이지네이션 처리
           paginatedData: [
             { $unwind: '$bills' }, // bills 배열을 다시 펼침
+            { $sort: { "bills.status": 1 } }, // status 기준으로 내림차순 정렬
             { $skip: skipCount },  // 페이지 시작 위치 스킵
             { $limit: pageSize },  // 페이지 크기만큼 제한
             {
