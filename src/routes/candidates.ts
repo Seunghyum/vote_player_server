@@ -8,7 +8,6 @@ router.get("/", async (req, res, next) => {
   const { koName, pageCount = 15, page = 1 } = req.query;
   const pc = parseInt(pageCount as string);
   const p = parseInt(page as string);
-
   let isQueryExist = !!koName 
   const query = isQueryExist ? { koName: { $regex: koName, $options: 'i'  } } : {};
   const result = await Candidates.find(query)
@@ -134,5 +133,48 @@ router.get("/:id/bills/", async function (req, res, next) {
     // 결과 반환 (result는 배열로 감싸져 있음)
     return res.json(result[0] ?? { result: [], summary: { total: 0, allTotal: 0, isLastPage:true } })
 });
+
+
+
+router.get("/:id/bills/:billNo", async function (req, res, next) {
+  const { type = 'bills' } = req.query
+  const { id, billNo } = req.params
+
+  try {
+    const result = await Candidates.aggregate([
+      // 1. 특정 후보를 필터링
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+
+      // 2. bills 배열을 펼치기
+      { $unwind: `$${type}` },
+
+        // 3. 특정 billId 필터링
+      { $match: { [`${type}.billNo`]: billNo }},
+
+      // 4. 결과를 합치기
+      {
+        $project: {
+          _id: "$bills._id",
+          nth: "$bills.nth",
+          name: "$bills.name",
+          proposers: "$bills.proposers",
+          committee: "$bills.committee",
+          date: "$bills.date",
+          status: "$bills.status",
+          billNo: "$bills.billNo",
+          summary: "$bills.summary",
+          billDetailUrl: "$bills.billDetailUrl",
+        },
+      },
+    ]);
+    // 결과 반환
+    if (result.length === 0) {
+      return res.status(404).json({ message: "Bill not found" });
+    }
+    return res.json(result[0]); // Bill 정보 반환
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+})
 
 export default router;
