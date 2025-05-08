@@ -4,16 +4,14 @@ import fs from "fs";
 import puppeteer from "puppeteer";
 import { iterateCandidatesInPage } from "@scripts/utils/candidates";
 import { $, $$ } from "@lib/selector";
+import sleep from "@lib/sleep";
 
 const 의원검색페이지 =
   "https://open.assembly.go.kr/portal/assm/search/memberSchPage.do";
 
 (async () => {
-  const candidatesFolderPath = path.resolve(
-    __dirname,
-    "../data/candidates"
-  );
-  removeDirIfExist(candidatesFolderPath);
+  const candidatesFolderPath = path.resolve(__dirname, "../data/candidates");
+  // removeDirIfExist(candidatesFolderPath);
 
   const browser = await puppeteer.launch({
     // headless: false,
@@ -22,9 +20,15 @@ const 의원검색페이지 =
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080 });
-    await page.goto(의원검색페이지, {timeout: 60 * 1000, waitUntil: 'networkidle0'});
-    const 사진보기btn = await $(page, '//*[@id="tab-btn-sect"]//a[contains(text(), "사진보기")]');
-    if(!사진보기btn) throw Error('사진보기btn이 없습니다')
+    await page.goto(의원검색페이지, {
+      timeout: 60 * 1000,
+      waitUntil: "networkidle0",
+    });
+    const 사진보기btn = await $(
+      page,
+      '//*[@id="tab-btn-sect"]//a[contains(text(), "사진보기")]'
+    );
+    if (!사진보기btn) throw Error("사진보기btn이 없습니다");
     await 사진보기btn.click();
     const selector = "a.nassem_reslut_pic img";
     const elements = await $$(page, selector);
@@ -34,17 +38,22 @@ const 의원검색페이지 =
     if (elements.length === 0)
       throw Error("첫 페이지의 의원 수가 0이 될 수 없습니다");
 
-    //페이지네이션 순회
+    //페이지네이션 순회. 한 페이지당 30개, 10개의 페이지네이션.
     let numOfPagination = 0;
-    let length = 11;
-    for (let i = 0; i < length; i++) {
+    let length = 10;
+    let skip = 0;
+    for (let i = 0; i <= length; i++) {
       // 의원 순회
-      await iterateCandidatesInPage(page, browser);
+      await iterateCandidatesInPage(page, browser, skip);
       const selector = "#pic-sect-pager strong + a.page-number";
       const p = await $(page, selector, { timeout: 5000 });
-      console.log("page : ", i + 2);
+
+      skip -= 30 * i;
+      if (skip <= 0) skip = 0;
+
       if (p) {
         await p.click();
+        await sleep(5000); // 데이터 로딩
       } else {
         numOfPagination = i + 1;
         break;

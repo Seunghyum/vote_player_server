@@ -1,12 +1,19 @@
 import express from "express";
 import mongoose from "mongoose";
+import billsRoute from "@routes/bills";
 import candidatesRoute from "@routes/candidates";
+import regionRoute from "@routes/region";
+import congressmanRoute from "@routes/congressmans";
 import "dotenv/config";
 
 const app = express();
-const { PORT, MONGO_URI, MONGO_USERNAME, MONGO_PASSWORD, MONGO_DBNAME } = process.env;
+const { PORT, MONGO_URI, MONGO_USERNAME, MONGO_PASSWORD, MONGO_DBNAME } =
+  process.env;
 
+app.use("/bills", billsRoute);
 app.use("/candidates", candidatesRoute);
+app.use("/region", regionRoute);
+app.use("/congressmans", congressmanRoute);
 
 if (!MONGO_URI) throw Error("dontenv 설정을 확인하세요");
 

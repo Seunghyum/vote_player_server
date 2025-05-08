@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import { $, $$ } from "@lib/selector";
 import { iterateCandidatesInPage } from "@scripts/utils/candidates";
+import sleep from "@lib/sleep";
 
 const 의원검색페이지 =
   "https://open.assembly.go.kr/portal/assm/search/memberSchPage.do";
@@ -18,7 +19,7 @@ const 의원검색페이지 =
   });
   try {
     const page = await browser.newPage();
-    await page.goto(의원검색페이지, {waitUntil: 'networkidle0'});
+    await page.goto(의원검색페이지, { waitUntil: "networkidle0" });
 
     await page.setViewport({ width: 1920, height: 1080 });
 
@@ -35,7 +36,7 @@ const 의원검색페이지 =
     //페이지네이션 순회
     let numOfPagination = 0;
     let length = 11;
-    let pageCount = 0
+    let pageCount = 0;
     for (let i = 0; i < length; i++) {
       console.log(`page : ${pageCount}`);
       // 의원 순회
@@ -43,13 +44,15 @@ const 의원검색페이지 =
       const selector = "#pic-sect-pager strong + a.page-number";
       const p = await $(page, selector, { timeout: 5000 });
       console.log("page : ", i + 2);
+      console.log("p : ", p);
       if (p) {
         await p.click();
+        await sleep(5000); // 데이터 로딩
       } else {
         numOfPagination = i + 1;
         break;
-      } 
-      pageCount++
+      }
+      pageCount++;
     }
 
     const numOfCandidates = await fs.readdirSync(candidatesFolderPath).length;
@@ -59,7 +62,7 @@ const 의원검색페이지 =
       `../data/candidates-${filenameTime}.zip`
     );
     await zipDirectory(candidatesFolderPath, zipPath);
-    if (numOfCandidates !== 298)
+    if (numOfCandidates !== 300)
       throw Error(
         `전체 의석수 300개 중 ${numOfCandidates}개만 크롤링 성공하였습니다.\n
         한 페이지당 총 ${candidatesPerPage}명의 의원.\n

@@ -15,7 +15,7 @@ router.get("/", async (req, res, next) => {
   const result = await Candidates.find(query)
     .select({
       bills: 0,
-      // billsCommitteeStatistics: 0,
+      billsCommitteeStatistics: 0,
       collabills: 0,
       collabillsCommitteeStatistics: 0,
     })
@@ -40,12 +40,13 @@ router.get("/:id", function (req, res, next) {
 });
 
 router.get("/:id/bills", async function (req, res, next) {
+  console.log("+++++");
   const { pageCount: limit = 15, page = 1, type = "bills" } = req.query;
   let status: string[];
   if (!req.query.status || req.query.status === "전체") {
     status = [
       "가결",
-      "수정안반영폐기",
+      "수정가결",
       "대안반영폐기",
       "임기만료폐기",
       "계류",
@@ -54,114 +55,99 @@ router.get("/:id/bills", async function (req, res, next) {
       "부결",
     ];
   } else {
-    status = [req.query.status.toString()];
+    status = [req.query.status.toString(), "tmp"]; // 2개 이상은 있어야해서 "전체"를 넣음.
   }
 
   const pageNumber = parseInt(page.toString(), 10) || 1; // 기본값 1
   const pageSize = parseInt(limit.toString(), 10) || 10; // 기본값 10
-  const skipCount = (pageNumber - 1) * pageSize;
+
+  console.log("@@@@ req.params.id : ", req.params.id);
+  console.log("@@@@ status : ", status);
+  return res.json(
+    await getBills({
+      type: type.toString(),
+      candidateId: req.params.id,
+      status,
+      page: pageNumber,
+      limit: pageSize,
+    })
+  );
+});
+
+interface getBillsProps {
+  type: string;
+  candidateId: string;
+  status: string[];
+  page: number;
+  limit: number;
+}
+
+async function getBills({
+  type,
+  candidateId,
+  status,
+  page = 1,
+  limit = 10,
+}: getBillsProps) {
+  const skip = (page - 1) * limit;
+
+  // ObjectId 유효성 검사
+  if (!mongoose.Types.ObjectId.isValid(candidateId)) {
+    throw new Error("Invalid candidateId");
+  }
 
   const result = await Candidates.aggregate([
-    // 1. 특정 후보를 필터링
-    { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
-
-    // 2. bills 배열을 펼치기
-    { $unwind: `$${type}` },
-
-    // // 3. bills의 status 필드 조건 필터링
-    // { $match: { [`${type}.status`]: { $in: status } } },
-
-    // 3. bills의 status 필드 조건 필터링
+    { $match: { _id: new mongoose.Types.ObjectId(candidateId) } },
     {
-      $match: {
-        $and: [
-          { [`${type}.age`]: `제${req.query.age}` },
-          // { age: req.query.age },
-          { [`${type}.status`]: { $in: status } },
-        ],
+      $lookup: {
+        from: type,
+        localField: type === "bills" ? "rst_bills" : "publ_bills",
+        foreignField: "_id",
+        as: type === "bills" ? "rst_bills" : "publ_bills",
       },
     },
-
-    // 4. 전체 bills 개수를 계산
+    // 상태 필터링
     {
-      $group: {
-        _id: "$_id", // 후보 ID별 그룹화
-        bills: { $push: `$${type}` }, // 필터링된 bills를 다시 배열로 묶음
-        totalBillsCount: { $sum: 1 }, // 필터링된 bills의 개수를 계산
+      $addFields: {
+        rst_bills:
+          Array.isArray(status) && status.length > 0
+            ? {
+                $filter: {
+                  input: type === "bills" ? "$rst_bills" : "$publ_bills",
+                  as: "bill",
+                  cond: { $in: ["$$bill.PROC_RESULT", status] },
+                },
+              }
+            : type === "bills"
+            ? "rst_bills"
+            : "publ_bills",
       },
     },
-
-    // 5. 페이지네이션 처리
-    {
-      $facet: {
-        // 전체 데이터의 개수를 계산 (total 필드)
-        totalData: [
-          {
-            $project: {
-              total: "$totalBillsCount", // 계산된 bills 개수를 total로 사용
-            },
-          },
-        ],
-
-        // 페이지네이션 처리
-        paginatedData: [
-          { $unwind: "$bills" }, // bills 배열을 다시 펼침
-          { $sort: { "bills.status": 1 } }, // status 기준으로 내림차순 정렬
-          { $skip: skipCount }, // 페이지 시작 위치 스킵
-          { $limit: pageSize }, // 페이지 크기만큼 제한
-          {
-            $project: {
-              _id: 0, // `_id` 필드 제외
-              age: "$bills.age",
-              name: "$bills.name",
-              proposers: "$bills.proposers",
-              committee: "$bills.committee",
-              date: "$bills.date",
-              status: "$bills.status",
-              billNo: "$bills.billNo",
-              summary: "$bills.summary",
-              billDetailUrl: "$bills.billDetailUrl",
-            },
-          },
-        ],
-      },
-    },
-
-    // 6. 결과를 합치기
     {
       $project: {
-        result: "$paginatedData",
+        total: { $size: type === "bills" ? "$rst_bills" : "$publ_bills" },
+        paged: {
+          $slice: [
+            type === "bills" ? "$rst_bills" : "$publ_bills",
+            skip,
+            limit,
+          ],
+        },
+      },
+    },
+    {
+      $project: {
+        result: "$paged",
         summary: {
-          total: { $arrayElemAt: ["$totalData.total", 0] }, // total 값 가져오기
-          isLastPage: {
-            $cond: {
-              if: {
-                $lte: [
-                  { $multiply: [skipCount + pageSize, 1] }, // 현재 페이지의 끝 인덱스
-                  { $arrayElemAt: ["$totalData.total", 0] }, // total
-                ],
-              },
-              then: false,
-              else: true,
-            },
-          },
+          total: "$total",
+          isLastPage: { $lte: ["$total", skip + limit] },
         },
       },
     },
   ]);
 
-  // const allTotal =
-  //   (await Candidates.findOne({ _id: req.params.id }))?.bills.length ?? 0;
-  // if (result[0]) result[0].summary.allTotal = allTotal;
-
-  // 결과 반환 (result는 배열로 감싸져 있음)
-  return res.json(
-    result[0] ?? {
-      result: [],
-      summary: { total: 0, allTotal: 0, isLastPage: true },
-    }
-  );
-});
+  return result[0] ?? { result: [], summary: { total: 0, isLastPage: true } };
+}
 
 router.get("/:id/bills/:billNo", async function (req, res, next) {
   const { type = "bills" } = req.query;

@@ -13,7 +13,16 @@
     "crawling:bills:collabills": "npx ts-node -r tsconfig-paths/register ./src/scripts/공동발의_의안.test.ts",
     "mongo:import:candidates": "zx ./shell/mongo-import-candidates.mjs",
     "mongo:drop:candidates": "zx ./shell/mongo-drop-candidates.mjs",
-    "api:import:candidates": "npx ts-node -r tsconfig-paths/register ./src/apis/candidates/candidates.ts"
+    "api:import:candidates": "npx ts-node -r tsconfig-paths/register ./src/apis/candidates/candidates.ts",
+    "api:import:congressmans": "npx ts-node -r tsconfig-paths/register ./src/apis/congressmans/congressmans.ts",
+    "api:import:bills": "npx ts-node -r tsconfig-paths/register ./src/apis/bills/발의법률안.ts",
+    "db:update": "yarn db:update:bills:rst:relation && yarn db:update:bills:publ:relation && yarn db:update:bills:rst:committee:statistics && yarn db:update:bills:rst:status:statistics && yarn db:update:bills:publ:committee:statistics && yarn db:update:bills:publ:status:statistics",
+    "db:update:bills:rst:relation": "npx ts-node -r tsconfig-paths/register ./src/scripts/발의법률안_대표발의_관계연결.script.ts",
+    "db:update:bills:publ:relation": "npx ts-node -r tsconfig-paths/register  ./src/scripts/발의법률안_공동발의_관계연결.script.ts",
+    "db:update:bills:rst:committee:statistics": "npx ts-node -r tsconfig-paths/register  ./src/scripts/대표법안별_위원회_통계.script.ts",
+    "db:update:bills:rst:status:statistics": "npx ts-node -r tsconfig-paths/register  ./src/scripts/대표법안별_상태_통계.script.ts",
+    "db:update:bills:publ:committee:statistics": "npx ts-node -r tsconfig-paths/register  ./src/scripts/공동법안별_위원회_통계.script.ts",
+    "db:update:bills:publ:status:statistics": "npx ts-node -r tsconfig-paths/register  ./src/scripts/공동법안별_상태_통계.script.ts"
   },
   "dependencies": {
     "archiver": "^6.0.1",
