@@ -40,7 +40,6 @@ router.get("/:id", function (req, res, next) {
 });
 
 router.get("/:id/bills", async function (req, res, next) {
-  console.log("+++++");
   const { pageCount: limit = 15, page = 1, type = "bills" } = req.query;
   let status: string[];
   if (!req.query.status || req.query.status === "전체") {
@@ -55,14 +54,12 @@ router.get("/:id/bills", async function (req, res, next) {
       "부결",
     ];
   } else {
-    status = [req.query.status.toString(), "tmp"]; // 2개 이상은 있어야해서 "전체"를 넣음.
+    status = [req.query.status.toString()];
   }
 
   const pageNumber = parseInt(page.toString(), 10) || 1; // 기본값 1
   const pageSize = parseInt(limit.toString(), 10) || 10; // 기본값 10
 
-  console.log("@@@@ req.params.id : ", req.params.id);
-  console.log("@@@@ status : ", status);
   return res.json(
     await getBills({
       type: type.toString(),

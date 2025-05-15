@@ -25,6 +25,7 @@ const billsSchema = new mongoose.Schema(
     PUBL_PROPOSER: String, //	공동발의자
     LAW_PROC_RESULT_CD: String, //	법사위처리결과
     RST_PROPOSER: String, //	대표발의자
+    summary: String,
     rst_candidates: [
       {
         type: mongoose.Types.ObjectId,
@@ -43,5 +44,4 @@ const billsSchema = new mongoose.Schema(
   }
 );
 
-// Create Model & Export
 export default mongoose.model("Bills", billsSchema);

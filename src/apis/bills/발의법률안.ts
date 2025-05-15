@@ -8,6 +8,7 @@ import chalk from "chalk";
 import type { BillsResponse } from "./발의법률안Response";
 import connectDB from "@scripts/utils/connectDB";
 import mongoose from "mongoose";
+import puppeteer from "puppeteer";
 
 const { OPEN_API_KEY } = process.env;
 
@@ -35,7 +36,7 @@ const defaultParams = {
   AGE: 22,
 };
 export function getBills(params?: getBillsType) {
-  let queryParams: paramsType & getBillsType = {
+  const queryParams: paramsType & getBillsType = {
     ...defaultParams,
     ...params,
   };
@@ -77,10 +78,42 @@ export default async function initBills() {
   if (list_total_count === total_items.length) {
     const origin_count = await bills.countDocuments();
     if (origin_count > 0) await bills.deleteMany({});
-
+    let 제안이유_및_주요내용Div;
     for (let item of total_items) {
       if (!item.PROC_RESULT) item.PROC_RESULT = "계류";
-      await bills.create(item);
+
+      if (item.DETAIL_LINK) {
+        try {
+          const browser = await puppeteer.launch({
+            // headless: false,
+            // slowMo: 10,
+          });
+          try {
+            const page = await browser.newPage();
+            await page.setViewport({ width: 1920, height: 1080 });
+            await page.goto(item.DETAIL_LINK.toString(), {
+              timeout: 60 * 1000,
+              waitUntil: "networkidle0",
+            });
+            await page.waitForSelector("#summaryContentDiv", {
+              timeout: 5 * 1000,
+            });
+            제안이유_및_주요내용Div = await page.$eval(
+              "#summaryContentDiv",
+              (el) => el.innerHTML
+            );
+          } catch (err) {
+            // throw err;
+            console.log("제안이유_및_주요내용Div 가 없습니다.");
+          } finally {
+            await browser.close();
+          }
+        } catch (err) {
+          console.log("브라우저가 열리지 않았습니다", err);
+        }
+      }
+
+      await bills.create({ ...item, summary: 제안이유_및_주요내용Div });
       console.log(
         chalk.blue(`document 추가 - ${await bills.countDocuments()}`)
       );

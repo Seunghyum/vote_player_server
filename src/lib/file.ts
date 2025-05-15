@@ -3,8 +3,8 @@ import archiver from "archiver";
 import { defaultTimeFormat } from "@lib/date";
 import { ElementHandle } from "puppeteer";
 
-export const filenameTime = defaultTimeFormat(new Date())
-const filePath = `../../data/candidates-${filenameTime}`
+export const filenameTime = defaultTimeFormat(new Date());
+const filePath = `../../data/candidates-${filenameTime}`;
 
 export function writeJsonFile({
   obj,
@@ -16,6 +16,9 @@ export function writeJsonFile({
   if (!fs.existsSync(folderPath)) {
     fs.mkdirSync(folderPath, { recursive: true });
   }
+
+  if (fs.existsSync(`${folderPath}/${fileName}`))
+    fs.rmSync(`${folderPath}/${fileName}`);
 
   fs.writeFileSync(`${folderPath}/${fileName}`, json);
 }
