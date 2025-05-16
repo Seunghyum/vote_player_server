@@ -30,6 +30,10 @@ const billVoteResultsSchema = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       ref: "Bills",
     },
+    candidate: {
+      type: mongoose.Types.ObjectId,
+      ref: "Candidates",
+    },
   },
   {
     timestamps: true,

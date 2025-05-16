@@ -47,28 +47,26 @@ export function getBillVoteResults(params: getBillVoteResultsType) {
       }
     )
     .then((res) => {
-      const items = res.data.nojepdqqaweusdfbi?.[1]["row"];
-      const list_total_count =
-        res.data.nojepdqqaweusdfbi?.[0]["head"]?.[0]["list_total_count"] || 0;
-      console.log("list_total_count : ", list_total_count);
-      console.log(
-        "isLastPage : ",
-        queryParams.pSize * queryParams.pIndex >= list_total_count
-      );
-      console.log("items.length : ", items?.length);
-      if ((items?.length ?? 0) === 0)
+      try {
+        const items = res.data.nojepdqqaweusdfbi?.[1]["row"];
+        const list_total_count =
+          res.data.nojepdqqaweusdfbi?.[0]["head"]?.[0]["list_total_count"] || 0;
+        if ((items?.length ?? 0) === 0)
+          return {
+            code: 200,
+            list_total_count,
+            message: "해당하는 데이터가 없습니다.",
+            items,
+          };
         return {
-          code: 404,
+          code: 200,
           list_total_count,
-          isLastPage: true,
-          message: "해당하는 데이터가 없습니다.",
+          isLastPage:
+            queryParams.pSize * queryParams.pIndex >= list_total_count,
           items,
         };
-      return {
-        code: 200,
-        list_total_count,
-        isLastPage: queryParams.pSize * queryParams.pIndex >= list_total_count,
-        items,
-      };
+      } catch (err) {
+        return { code: 500, items: [], statics: [], list_total_count: 0 };
+      }
     });
 }
