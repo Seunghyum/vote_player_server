@@ -66,7 +66,7 @@ export function getBillVoteResults(params: getBillVoteResultsType) {
           items,
         };
       } catch (err) {
-        return { code: 500, items: [], statics: [], list_total_count: 0 };
+        return { code: 500, items: [], statistics: [], list_total_count: 0 };
       }
     });
 }
