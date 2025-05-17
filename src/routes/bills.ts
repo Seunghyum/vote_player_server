@@ -6,13 +6,14 @@ import billsStatusStatistics from "@models/billsStatusStatistics";
 const router = express.Router();
 
 router.get("/", async (req, res, next) => {
-  const { BILL_NAME, age = "22", pageCount = 15, page = 1 } = req.query;
+  const { BILL_NAME, age = "22", pageCount = 15, page = 1, status } = req.query;
   const pc = parseInt(pageCount as string);
   const p = parseInt(page as string);
   let isQueryExist = !!BILL_NAME;
   let query: any = isQueryExist
     ? { BILL_NAME: { $regex: BILL_NAME, $options: "i" } }
     : {};
+  if (status !== "전체") query.PROC_RESULT = { $eq: status };
   query.AGE = age;
   const [items, statistics] = await Promise.all([
     Bills.find(query)
