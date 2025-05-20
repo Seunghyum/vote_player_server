@@ -4,7 +4,9 @@ import billsRoute from "@routes/bills";
 import candidatesRoute from "@routes/candidates";
 import regionRoute from "@routes/region";
 import congressmanRoute from "@routes/congressmans";
-import "dotenv/config";
+import dotenv from "dotenv";
+
+dotenv.config({ path: `.env.${process.env.NODE_ENV || "dev"}` });
 
 const app = express();
 const { PORT, MONGO_URI, MONGO_USERNAME, MONGO_PASSWORD, MONGO_DBNAME } =

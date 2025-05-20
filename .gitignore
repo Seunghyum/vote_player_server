@@ -3,5 +3,5 @@ node_modules
 data
 .DS_Store
 dist
-.env
+.env*
 .ipynb_checkpoints

@@ -1,27 +1,56 @@
 services:
-  backend:
+  mongodb:
+    env_file: ./.env.prod
     restart: always
-    build:
-      context: backend
-      target: dev-envs
+    image: mongo
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    depends_on:
-      - mongo
-    networks:
-      - express-mongo
-      - react-express
-    ports:
-      - 8080:8080
-  mongo:
-    restart: always
-    image: mongo:4.2.0
-    volumes:
-      - ./data:/data/db
-    networks:
-      - express-mongo
+      - $MONGO_DB_PATH:/data/db
+      - ./shell/init-mongo:/docker-entrypoint-initdb.d
+    # networks:
+    #   - mongo-seed
     expose:
       - 27017
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_DATABASE=vote-player
+      - MONGO_INITDB_ROOT_USERNAME=$MONGO_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD=$MONGO_PASSWORD
+    command:
+      - mongod
+    networks:
+      - app-network
+  #   mongo-seed:
+  #     image: node
+  #     build: .
+  #     depends_on:
+  #       - mongodb
+  #     networks:
+  #       - mongo-seed
+  # networks:
+  #   mongo-seed:
+  # volumes:
+  #   mongodb:
+  #   mongo-seed:
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: ./.env.prod
+    restart: always
+    expose:
+      - 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+    environment:
+      - NODE_ENV=prod
+      - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DBNAME}?authSource=admin
+    networks:
+      - app-network
+
 networks:
-  react-express:
-  express-mongo:
+  app-network:
+    driver: bridge

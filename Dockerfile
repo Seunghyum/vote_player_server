@@ -13,7 +13,7 @@ RUN \
 
 # 소스 복사 및 빌드
 COPY . .
-RUN npm run build
+RUN yarn build
 
 # 2. Production Stage
 FROM node:23-alpine AS prod
@@ -25,9 +25,9 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 
-# 환경변수 예시 (필요시)
-# ENV NODE_ENV=production
+# 환경변수 파일 복사
+COPY .env.prod ./
 
 EXPOSE 3000
 
-CMD ["node", "dist/app.js"]
+CMD ["yarn", "start"]
